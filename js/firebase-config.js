@@ -6,12 +6,12 @@
 // Firebase configuration for "ACE Pilot Training Log" project
 // Replace these values with your actual Firebase project credentials
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
+    apiKey: "AIzaSyDsdIcxCT9GnjiCvBO-SdQEOpAxwewVmPs",
     authDomain: "ace-pilot-training-log.firebaseapp.com",
     projectId: "ace-pilot-training-log",
-    storageBucket: "ace-pilot-training-log.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    storageBucket: "ace-pilot-training-log.firebasestorage.app",
+    messagingSenderId: "270538490552",
+    appId: "1:270538490552:web:8e81b7ef410e1f9540ea4d"
 };
 
 // Initialize Firebase
