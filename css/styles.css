@@ -2,6 +2,7 @@
    ACE Pilot Training Log
    Neomorphic Design System
    Colors: Navy Blue + Neon Green
+   Aviation Career Enrichment, Inc.
    ============================================ */
 
 /* === CSS Variables === */
@@ -12,18 +13,19 @@
     --bg-card: #122240;
     --bg-input: #0D1A2F;
     --bg-hover: #162B4D;
+    --bg-elevated: #152A4A;
 
-    /* Neomorphic Shadows */
-    --neo-shadow-dark: #060D17;
-    --neo-shadow-light: #142D52;
-    --neo-inset-dark: #080F1C;
-    --neo-inset-light: #1A3560;
+    /* Neomorphic Shadows — pronounced depth */
+    --neo-shadow-dark: #050B14;
+    --neo-shadow-light: #1A3B6B;
+    --neo-inset-dark: #070E1A;
+    --neo-inset-light: #1E4070;
 
     /* Neon Green Palette */
     --accent-primary: #00FF41;
     --accent-secondary: #00CC33;
-    --accent-glow: rgba(0, 255, 65, 0.3);
-    --accent-dim: rgba(0, 255, 65, 0.1);
+    --accent-glow: rgba(0, 255, 65, 0.35);
+    --accent-dim: rgba(0, 255, 65, 0.12);
     --accent-text: #00FF41;
 
     /* Text Colors */
@@ -80,6 +82,8 @@ body {
     min-height: 100vh;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    /* Subtle radial gradient background for depth */
+    background: radial-gradient(ellipse at 50% 0%, #0F1D32 0%, #0B1526 60%);
 }
 
 ::selection {
@@ -123,6 +127,10 @@ body {
     justify-content: center;
     min-height: 100vh;
     padding: var(--space-lg);
+    background:
+        radial-gradient(circle at 30% 20%, rgba(0, 255, 65, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 70% 80%, rgba(0, 255, 65, 0.02) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, #0F1D32 0%, #0B1526 70%);
 }
 
 .logo-section {
@@ -130,49 +138,77 @@ body {
     margin-bottom: var(--space-xl);
 }
 
+/* Logo container — strong neomorphic emboss */
 .logo-icon {
-    width: 80px;
-    height: 80px;
+    width: 140px;
+    height: 140px;
     border-radius: var(--radius-full);
     background: var(--bg-card);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto var(--space-md);
+    margin: 0 auto var(--space-lg);
     box-shadow:
-        8px 8px 16px var(--neo-shadow-dark),
-        -8px -8px 16px var(--neo-shadow-light);
+        12px 12px 24px var(--neo-shadow-dark),
+        -12px -12px 24px var(--neo-shadow-light),
+        0 0 40px rgba(0, 255, 65, 0.08);
     position: relative;
+    overflow: hidden;
 }
 
 .logo-icon::after {
     content: '';
     position: absolute;
-    inset: -3px;
+    inset: -4px;
     border-radius: var(--radius-full);
     border: 2px solid var(--accent-primary);
-    box-shadow: 0 0 20px var(--accent-glow), inset 0 0 20px var(--accent-dim);
-    animation: pulse-glow 2s infinite;
+    box-shadow: 0 0 30px var(--accent-glow), inset 0 0 30px var(--accent-dim);
+    animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.logo-img {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    filter: drop-shadow(0 0 8px rgba(0, 255, 65, 0.3));
+    position: relative;
+    z-index: 1;
 }
 
 .logo-icon i {
-    font-size: 36px;
+    font-size: 48px;
     color: var(--accent-primary);
-    filter: drop-shadow(0 0 8px var(--accent-glow));
+    filter: drop-shadow(0 0 12px var(--accent-glow));
 }
 
 @keyframes pulse-glow {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    0%, 100% { opacity: 1; box-shadow: 0 0 30px var(--accent-glow), inset 0 0 30px var(--accent-dim); }
+    50% { opacity: 0.5; box-shadow: 0 0 15px var(--accent-dim), inset 0 0 15px rgba(0,255,65,0.05); }
 }
 
 .app-title {
     font-family: 'Orbitron', sans-serif;
-    font-size: 3rem;
+    font-size: 3.5rem;
     font-weight: 900;
     color: var(--accent-primary);
-    text-shadow: 0 0 20px var(--accent-glow), 0 0 40px var(--accent-dim);
-    letter-spacing: 8px;
+    text-shadow:
+        0 0 20px var(--accent-glow),
+        0 0 40px rgba(0, 255, 65, 0.15),
+        0 0 80px rgba(0, 255, 65, 0.08);
+    letter-spacing: 12px;
+}
+
+.app-subtitle-org {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: var(--space-sm);
+    opacity: 0.8;
+    text-shadow: 0 0 10px var(--accent-dim);
 }
 
 .app-subtitle {
@@ -186,11 +222,11 @@ body {
 }
 
 .accent-line {
-    width: 60px;
+    width: 80px;
     height: 3px;
     background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
     margin: var(--space-md) auto 0;
-    box-shadow: 0 0 10px var(--accent-glow);
+    box-shadow: 0 0 15px var(--accent-glow), 0 2px 10px var(--accent-dim);
 }
 
 /* === Neomorphic Card === */
@@ -199,14 +235,28 @@ body {
     border-radius: var(--radius-lg);
     padding: var(--space-lg);
     box-shadow:
-        8px 8px 20px var(--neo-shadow-dark),
-        -8px -8px 20px var(--neo-shadow-light);
-    border: 1px solid rgba(0, 255, 65, 0.05);
-    transition: var(--transition-normal);
+        10px 10px 25px var(--neo-shadow-dark),
+        -10px -10px 25px var(--neo-shadow-light);
+    border: 1px solid rgba(0, 255, 65, 0.06);
+    transition: all var(--transition-normal);
+    position: relative;
+}
+
+.neo-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 50%, rgba(0,0,0,0.05) 100%);
+    pointer-events: none;
 }
 
 .neo-card:hover {
-    border-color: rgba(0, 255, 65, 0.1);
+    border-color: rgba(0, 255, 65, 0.12);
+    box-shadow:
+        10px 10px 25px var(--neo-shadow-dark),
+        -10px -10px 25px var(--neo-shadow-light),
+        0 0 15px rgba(0, 255, 65, 0.05);
 }
 
 .login-card {
@@ -245,6 +295,7 @@ body {
     text-transform: uppercase;
 }
 
+/* Deep inset neomorphic inputs */
 .neo-input-wrapper {
     display: flex;
     align-items: center;
@@ -252,18 +303,19 @@ body {
     border-radius: var(--radius-md);
     padding: var(--space-sm) var(--space-md);
     box-shadow:
-        inset 4px 4px 8px var(--neo-inset-dark),
-        inset -4px -4px 8px var(--neo-inset-light);
-    border: 1px solid transparent;
-    transition: var(--transition-fast);
+        inset 5px 5px 10px var(--neo-inset-dark),
+        inset -5px -5px 10px var(--neo-inset-light);
+    border: 1px solid rgba(0, 255, 65, 0.03);
+    transition: all var(--transition-fast);
 }
 
 .neo-input-wrapper:focus-within {
     border-color: var(--accent-primary);
     box-shadow:
-        inset 4px 4px 8px var(--neo-inset-dark),
-        inset -4px -4px 8px var(--neo-inset-light),
-        0 0 12px var(--accent-dim);
+        inset 5px 5px 10px var(--neo-inset-dark),
+        inset -5px -5px 10px var(--neo-inset-light),
+        0 0 15px var(--accent-dim),
+        0 0 30px rgba(0, 255, 65, 0.06);
 }
 
 .neo-input-wrapper i {
@@ -272,10 +324,12 @@ body {
     margin-right: var(--space-sm);
     width: 20px;
     text-align: center;
+    transition: color var(--transition-fast);
 }
 
 .neo-input-wrapper:focus-within i {
     color: var(--accent-primary);
+    filter: drop-shadow(0 0 4px var(--accent-dim));
 }
 
 .neo-input-wrapper input,
@@ -315,18 +369,18 @@ body {
     border-radius: var(--radius-md);
     padding: var(--space-sm) var(--space-md);
     box-shadow:
-        inset 4px 4px 8px var(--neo-inset-dark),
-        inset -4px -4px 8px var(--neo-inset-light);
-    border: 1px solid transparent;
-    transition: var(--transition-fast);
+        inset 5px 5px 10px var(--neo-inset-dark),
+        inset -5px -5px 10px var(--neo-inset-light);
+    border: 1px solid rgba(0, 255, 65, 0.03);
+    transition: all var(--transition-fast);
 }
 
 .neo-select-wrapper:focus-within {
     border-color: var(--accent-primary);
     box-shadow:
-        inset 4px 4px 8px var(--neo-inset-dark),
-        inset -4px -4px 8px var(--neo-inset-light),
-        0 0 12px var(--accent-dim);
+        inset 5px 5px 10px var(--neo-inset-dark),
+        inset -5px -5px 10px var(--neo-inset-light),
+        0 0 15px var(--accent-dim);
 }
 
 .neo-select-wrapper i {
@@ -357,7 +411,7 @@ body {
     color: var(--text-primary);
 }
 
-/* === Buttons === */
+/* === Buttons — raised neomorphic with glow === */
 .neo-btn {
     display: inline-flex;
     align-items: center;
@@ -372,31 +426,49 @@ body {
     letter-spacing: 1px;
     text-transform: uppercase;
     cursor: pointer;
-    transition: var(--transition-normal);
+    transition: all var(--transition-normal);
     width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.neo-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.neo-btn:hover::before {
+    left: 100%;
 }
 
 .primary-btn {
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     color: var(--bg-primary);
     box-shadow:
-        4px 4px 12px var(--neo-shadow-dark),
-        -4px -4px 12px var(--neo-shadow-light),
-        0 0 20px var(--accent-dim);
+        6px 6px 16px var(--neo-shadow-dark),
+        -6px -6px 16px var(--neo-shadow-light),
+        0 0 25px var(--accent-dim);
 }
 
 .primary-btn:hover {
     box-shadow:
-        4px 4px 12px var(--neo-shadow-dark),
-        -4px -4px 12px var(--neo-shadow-light),
-        0 0 30px var(--accent-glow);
+        6px 6px 16px var(--neo-shadow-dark),
+        -6px -6px 16px var(--neo-shadow-light),
+        0 0 40px var(--accent-glow),
+        0 0 80px rgba(0, 255, 65, 0.1);
     transform: translateY(-2px);
 }
 
 .primary-btn:active {
-    transform: translateY(0);
+    transform: translateY(1px);
     box-shadow:
-        inset 2px 2px 6px rgba(0, 0, 0, 0.3),
+        inset 3px 3px 8px rgba(0, 0, 0, 0.3),
         0 0 15px var(--accent-dim);
 }
 
@@ -404,15 +476,15 @@ body {
     background: linear-gradient(135deg, var(--danger), #CC3333);
     color: #fff;
     box-shadow:
-        4px 4px 12px var(--neo-shadow-dark),
-        -4px -4px 12px var(--neo-shadow-light);
+        6px 6px 16px var(--neo-shadow-dark),
+        -6px -6px 16px var(--neo-shadow-light);
 }
 
 .danger-btn:hover {
     box-shadow:
-        4px 4px 12px var(--neo-shadow-dark),
-        -4px -4px 12px var(--neo-shadow-light),
-        0 0 20px rgba(255, 68, 68, 0.3);
+        6px 6px 16px var(--neo-shadow-dark),
+        -6px -6px 16px var(--neo-shadow-light),
+        0 0 25px rgba(255, 68, 68, 0.3);
     transform: translateY(-2px);
 }
 
@@ -420,25 +492,26 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border: none;
     border-radius: var(--radius-sm);
     background: var(--bg-card);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: var(--transition-fast);
+    transition: all var(--transition-fast);
     box-shadow:
-        3px 3px 8px var(--neo-shadow-dark),
-        -3px -3px 8px var(--neo-shadow-light);
+        4px 4px 10px var(--neo-shadow-dark),
+        -4px -4px 10px var(--neo-shadow-light);
 }
 
 .neo-btn-sm:hover {
     color: var(--accent-primary);
     box-shadow:
-        3px 3px 8px var(--neo-shadow-dark),
-        -3px -3px 8px var(--neo-shadow-light),
-        0 0 10px var(--accent-dim);
+        4px 4px 10px var(--neo-shadow-dark),
+        -4px -4px 10px var(--neo-shadow-light),
+        0 0 12px var(--accent-dim);
+    transform: translateY(-1px);
 }
 
 /* === Error Message === */
@@ -450,6 +523,7 @@ body {
     font-size: 0.85rem;
     margin-bottom: var(--space-md);
     border-left: 3px solid var(--danger);
+    box-shadow: inset 2px 2px 6px rgba(0,0,0,0.15);
 }
 
 /* === Form Footer === */
@@ -464,11 +538,11 @@ body {
     color: var(--accent-primary);
     text-decoration: none;
     font-weight: 600;
-    transition: var(--transition-fast);
+    transition: all var(--transition-fast);
 }
 
 .form-footer a:hover {
-    text-shadow: 0 0 10px var(--accent-glow);
+    text-shadow: 0 0 12px var(--accent-glow);
 }
 
 /* ============================================
@@ -484,7 +558,10 @@ body {
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow:
+        0 6px 25px rgba(0, 0, 0, 0.4),
+        0 1px 0 rgba(0, 255, 65, 0.05);
+    backdrop-filter: blur(10px);
 }
 
 .nav-left {
@@ -503,6 +580,18 @@ body {
     text-shadow: 0 0 10px var(--accent-dim);
 }
 
+.nav-logo-img {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    filter: drop-shadow(0 0 6px var(--accent-dim));
+    transition: filter var(--transition-fast);
+}
+
+.nav-logo:hover .nav-logo-img {
+    filter: drop-shadow(0 0 10px var(--accent-glow));
+}
+
 .nav-logo i {
     font-size: 1.1rem;
     filter: drop-shadow(0 0 6px var(--accent-glow));
@@ -514,6 +603,7 @@ body {
     gap: var(--space-xs);
 }
 
+/* Neomorphic tab buttons */
 .nav-tab {
     display: flex;
     align-items: center;
@@ -529,20 +619,24 @@ body {
     letter-spacing: 0.5px;
     text-transform: uppercase;
     cursor: pointer;
-    transition: var(--transition-fast);
+    transition: all var(--transition-fast);
 }
 
 .nav-tab:hover {
     color: var(--text-primary);
     background: var(--bg-hover);
+    box-shadow:
+        3px 3px 8px var(--neo-shadow-dark),
+        -3px -3px 8px var(--neo-shadow-light);
 }
 
 .nav-tab.active {
     color: var(--accent-primary);
     background: var(--bg-card);
     box-shadow:
-        inset 2px 2px 4px var(--neo-inset-dark),
-        inset -2px -2px 4px var(--neo-inset-light);
+        inset 3px 3px 6px var(--neo-inset-dark),
+        inset -3px -3px 6px var(--neo-inset-light);
+    text-shadow: 0 0 8px var(--accent-dim);
 }
 
 .nav-tab i {
@@ -573,11 +667,11 @@ body {
 
 .tab-content.active {
     display: block;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn 0.4s ease;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(15px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
@@ -597,7 +691,7 @@ body {
 
 .section-header h2 i {
     color: var(--accent-primary);
-    filter: drop-shadow(0 0 4px var(--accent-dim));
+    filter: drop-shadow(0 0 6px var(--accent-dim));
 }
 
 .section-header p {
@@ -607,7 +701,7 @@ body {
     margin-left: 30px;
 }
 
-/* === Overall Progress === */
+/* === Overall Progress — neomorphic track === */
 .progress-overview {
     margin-bottom: var(--space-xl);
 }
@@ -628,14 +722,15 @@ body {
     gap: var(--space-md);
 }
 
+/* Deep inset progress track */
 .progress-track {
     flex: 1;
-    height: 12px;
+    height: 14px;
     background: var(--bg-input);
-    border-radius: 6px;
+    border-radius: 7px;
     box-shadow:
-        inset 3px 3px 6px var(--neo-inset-dark),
-        inset -3px -3px 6px var(--neo-inset-light);
+        inset 4px 4px 8px var(--neo-inset-dark),
+        inset -4px -4px 8px var(--neo-inset-light);
     overflow: hidden;
     position: relative;
 }
@@ -643,10 +738,10 @@ body {
 .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
-    border-radius: 6px;
+    border-radius: 7px;
     transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    box-shadow: 0 0 12px var(--accent-glow);
+    box-shadow: 0 0 16px var(--accent-glow), 0 0 4px var(--accent-primary);
 }
 
 .progress-fill::after {
@@ -659,7 +754,7 @@ body {
     background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(255, 255, 255, 0.15) 50%,
+        rgba(255, 255, 255, 0.2) 50%,
         transparent 100%
     );
     animation: shimmer 2s infinite;
@@ -677,7 +772,7 @@ body {
     color: var(--accent-primary);
     min-width: 48px;
     text-align: right;
-    text-shadow: 0 0 8px var(--accent-dim);
+    text-shadow: 0 0 10px var(--accent-dim);
 }
 
 /* === Milestone Grid === */
@@ -691,6 +786,15 @@ body {
 .milestone-card {
     position: relative;
     overflow: hidden;
+    transition: all var(--transition-normal);
+}
+
+.milestone-card:hover {
+    transform: translateY(-3px);
+    box-shadow:
+        12px 12px 30px var(--neo-shadow-dark),
+        -12px -12px 30px var(--neo-shadow-light),
+        0 0 20px rgba(0, 255, 65, 0.06);
 }
 
 .milestone-card::before {
@@ -701,18 +805,20 @@ body {
     width: 4px;
     height: 100%;
     background: var(--accent-primary);
-    opacity: 0.3;
-    transition: var(--transition-normal);
+    opacity: 0.25;
+    transition: all var(--transition-normal);
 }
 
 .milestone-card.completed::before {
     opacity: 1;
-    box-shadow: 0 0 10px var(--accent-glow);
+    box-shadow: 0 0 15px var(--accent-glow);
+    width: 5px;
 }
 
+/* Neomorphic inset icon container */
 .milestone-icon {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: var(--radius-md);
     background: var(--bg-input);
     display: flex;
@@ -720,13 +826,14 @@ body {
     justify-content: center;
     margin-bottom: var(--space-md);
     box-shadow:
-        inset 3px 3px 6px var(--neo-inset-dark),
-        inset -3px -3px 6px var(--neo-inset-light);
+        inset 4px 4px 8px var(--neo-inset-dark),
+        inset -4px -4px 8px var(--neo-inset-light);
 }
 
 .milestone-icon i {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--accent-primary);
+    filter: drop-shadow(0 0 4px var(--accent-dim));
 }
 
 .milestone-card h4 {
@@ -747,7 +854,7 @@ body {
 }
 
 .milestone-progress .progress-track {
-    height: 8px;
+    height: 10px;
 }
 
 .milestone-progress .progress-percent {
@@ -768,7 +875,7 @@ body {
     font-size: 0.75rem;
 }
 
-/* === Hours Summary === */
+/* === Hours Summary — neomorphic stat boxes === */
 .hours-summary h3 {
     font-family: 'Rajdhani', sans-serif;
     font-size: 1rem;
@@ -792,23 +899,34 @@ body {
     gap: var(--space-md);
 }
 
+/* Deep inset stat boxes */
 .hour-stat {
     text-align: center;
-    padding: var(--space-md);
+    padding: var(--space-lg) var(--space-md);
     background: var(--bg-input);
     border-radius: var(--radius-md);
     box-shadow:
-        inset 3px 3px 6px var(--neo-inset-dark),
-        inset -3px -3px 6px var(--neo-inset-light);
+        inset 5px 5px 10px var(--neo-inset-dark),
+        inset -5px -5px 10px var(--neo-inset-light);
+    border: 1px solid rgba(0, 255, 65, 0.03);
+    transition: all var(--transition-normal);
+}
+
+.hour-stat:hover {
+    border-color: rgba(0, 255, 65, 0.1);
+    box-shadow:
+        inset 5px 5px 10px var(--neo-inset-dark),
+        inset -5px -5px 10px var(--neo-inset-light),
+        0 0 10px rgba(0, 255, 65, 0.04);
 }
 
 .hour-value {
     display: block;
     font-family: 'Orbitron', sans-serif;
-    font-size: 1.6rem;
+    font-size: 1.8rem;
     font-weight: 700;
     color: var(--accent-primary);
-    text-shadow: 0 0 10px var(--accent-dim);
+    text-shadow: 0 0 12px var(--accent-dim);
 }
 
 .hour-label {
@@ -841,7 +959,7 @@ body {
     padding-bottom: var(--space-md);
     border-bottom: 1px solid rgba(0, 255, 65, 0.08);
     margin-bottom: var(--space-md);
-    transition: var(--transition-fast);
+    transition: all var(--transition-fast);
 }
 
 .form-section-header:hover {
@@ -863,6 +981,7 @@ body {
 .form-section-header h3 i {
     color: var(--accent-primary);
     font-size: 0.95rem;
+    filter: drop-shadow(0 0 3px var(--accent-dim));
 }
 
 .section-toggle {
@@ -942,11 +1061,13 @@ body {
 .save-status.success {
     color: var(--success);
     background: rgba(0, 255, 65, 0.1);
+    box-shadow: inset 2px 2px 6px rgba(0,0,0,0.15);
 }
 
 .save-status.error {
     color: var(--danger);
     background: rgba(255, 68, 68, 0.1);
+    box-shadow: inset 2px 2px 6px rgba(0,0,0,0.15);
 }
 
 /* ============================================
@@ -964,17 +1085,18 @@ body {
     margin-bottom: var(--space-lg);
 }
 
+/* Neomorphic inset avatar */
 .profile-avatar {
-    width: 90px;
-    height: 90px;
+    width: 100px;
+    height: 100px;
     border-radius: var(--radius-full);
     background: var(--bg-input);
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow:
-        inset 4px 4px 8px var(--neo-inset-dark),
-        inset -4px -4px 8px var(--neo-inset-light);
+        inset 5px 5px 10px var(--neo-inset-dark),
+        inset -5px -5px 10px var(--neo-inset-light);
     flex-shrink: 0;
     position: relative;
 }
@@ -982,15 +1104,16 @@ body {
 .profile-avatar::after {
     content: '';
     position: absolute;
-    inset: -2px;
+    inset: -3px;
     border-radius: var(--radius-full);
     border: 2px solid rgba(0, 255, 65, 0.2);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.08);
 }
 
 .profile-avatar i {
-    font-size: 2.2rem;
+    font-size: 2.5rem;
     color: var(--accent-primary);
-    filter: drop-shadow(0 0 6px var(--accent-dim));
+    filter: drop-shadow(0 0 8px var(--accent-dim));
 }
 
 .profile-info h3 {
@@ -1040,34 +1163,38 @@ body {
     gap: var(--space-md);
 }
 
+/* Neomorphic achievement badges */
 .achievement-badge {
     text-align: center;
-    padding: var(--space-md);
+    padding: var(--space-lg) var(--space-md);
     background: var(--bg-input);
     border-radius: var(--radius-md);
     box-shadow:
-        inset 3px 3px 6px var(--neo-inset-dark),
-        inset -3px -3px 6px var(--neo-inset-light);
-    transition: var(--transition-normal);
+        inset 4px 4px 8px var(--neo-inset-dark),
+        inset -4px -4px 8px var(--neo-inset-light);
+    transition: all var(--transition-normal);
+    border: 1px solid transparent;
 }
 
 .achievement-badge.earned {
-    border: 1px solid rgba(0, 255, 65, 0.2);
+    border-color: rgba(0, 255, 65, 0.2);
+    background: var(--bg-card);
     box-shadow:
-        inset 3px 3px 6px var(--neo-inset-dark),
-        inset -3px -3px 6px var(--neo-inset-light),
-        0 0 10px var(--accent-dim);
+        6px 6px 14px var(--neo-shadow-dark),
+        -6px -6px 14px var(--neo-shadow-light),
+        0 0 15px var(--accent-dim);
 }
 
 .achievement-badge i {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     margin-bottom: var(--space-sm);
     color: var(--text-muted);
+    transition: all var(--transition-normal);
 }
 
 .achievement-badge.earned i {
     color: var(--accent-primary);
-    filter: drop-shadow(0 0 6px var(--accent-glow));
+    filter: drop-shadow(0 0 8px var(--accent-glow));
 }
 
 .achievement-badge span {
@@ -1099,11 +1226,12 @@ body {
 .loading-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(11, 21, 38, 0.9);
+    background: rgba(11, 21, 38, 0.92);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    backdrop-filter: blur(4px);
 }
 
 .loading-spinner {
@@ -1111,14 +1239,14 @@ body {
 }
 
 .spinner-ring {
-    width: 50px;
-    height: 50px;
+    width: 56px;
+    height: 56px;
     border: 3px solid var(--bg-card);
     border-top-color: var(--accent-primary);
     border-radius: 50%;
     margin: 0 auto var(--space-md);
     animation: spin 1s linear infinite;
-    box-shadow: 0 0 15px var(--accent-dim);
+    box-shadow: 0 0 20px var(--accent-dim), inset 0 0 10px rgba(0, 255, 65, 0.05);
 }
 
 @keyframes spin {
@@ -1133,6 +1261,7 @@ body {
     text-transform: uppercase;
 }
 
+/* Neomorphic toast notification */
 .toast {
     position: fixed;
     bottom: var(--space-xl);
@@ -1143,9 +1272,9 @@ body {
     padding: var(--space-md) var(--space-xl);
     border-radius: var(--radius-md);
     box-shadow:
-        8px 8px 20px var(--neo-shadow-dark),
-        -8px -8px 20px var(--neo-shadow-light),
-        0 0 15px var(--accent-dim);
+        10px 10px 25px var(--neo-shadow-dark),
+        -10px -10px 25px var(--neo-shadow-light),
+        0 0 20px var(--accent-dim);
     border: 1px solid rgba(0, 255, 65, 0.15);
     font-size: 0.9rem;
     z-index: 2000;
@@ -1213,7 +1342,18 @@ body {
     }
 
     .app-title {
-        font-size: 2.2rem;
+        font-size: 2.5rem;
+        letter-spacing: 8px;
+    }
+
+    .logo-icon {
+        width: 110px;
+        height: 110px;
+    }
+
+    .logo-img {
+        width: 90px;
+        height: 90px;
     }
 
     .achievements-grid {
@@ -1233,5 +1373,20 @@ body {
 
     .section-header h2 {
         font-size: 1.1rem;
+    }
+
+    .logo-icon {
+        width: 100px;
+        height: 100px;
+    }
+
+    .logo-img {
+        width: 80px;
+        height: 80px;
+    }
+
+    .app-title {
+        font-size: 2rem;
+        letter-spacing: 6px;
     }
 }
