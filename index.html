@@ -26,13 +26,13 @@
             <div class="login-card neo-card">
                 <div id="login-form-section">
                     <h2 class="form-title">Pilot Login</h2>
-                    <p class="form-desc">Enter your last 5 digits of your pilot certificate</p>
+                    <p class="form-desc">Sign in with your email and password</p>
 
                     <div class="input-group">
-                        <label for="login-cert-id">Certificate ID (Last 5 Digits)</label>
+                        <label for="login-email">Email Address</label>
                         <div class="neo-input-wrapper">
-                            <i class="fas fa-id-badge"></i>
-                            <input type="text" id="login-cert-id" maxlength="5" pattern="[0-9]{5}" placeholder="e.g. 23456" autocomplete="off">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="login-email" placeholder="Enter your email" autocomplete="email">
                         </div>
                     </div>
 
@@ -72,6 +72,14 @@
                         <div class="neo-input-wrapper">
                             <i class="fas fa-user"></i>
                             <input type="text" id="reg-last-name" placeholder="Last name">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="reg-email">Email Address</label>
+                        <div class="neo-input-wrapper">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="reg-email" placeholder="Enter your email" autocomplete="email">
                         </div>
                     </div>
 

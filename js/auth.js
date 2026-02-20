@@ -65,11 +65,11 @@ function validateCertId(certId) {
 async function handleLogin() {
     clearErrors();
 
-    const certId = document.getElementById('login-cert-id').value.trim();
+    const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
 
-    if (!validateCertId(certId)) {
-        showLoginError('Certificate ID must be exactly 5 digits.');
+    if (!email) {
+        showLoginError('Email address is required.');
         return;
     }
 
@@ -81,23 +81,23 @@ async function handleLogin() {
     showLoading(true);
 
     try {
-        // Use cert ID as email prefix for Firebase Auth
-        const email = `pilot${certId}@acepilotlog.app`;
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         currentUser = userCredential.user;
 
-        // Load pilot data
-        await loadPilotData(certId);
+        // Load pilot data by UID
+        await loadPilotData(currentUser.uid);
         showAppScreen();
         showToast('Welcome back, pilot!');
     } catch (error) {
         console.error('Login error:', error);
         if (error.code === 'auth/user-not-found') {
-            showLoginError('No account found with this Certificate ID. Please register first.');
+            showLoginError('No account found with this email. Please register first.');
         } else if (error.code === 'auth/wrong-password') {
             showLoginError('Incorrect password. Please try again.');
         } else if (error.code === 'auth/invalid-credential') {
-            showLoginError('Invalid credentials. Please check your Certificate ID and password.');
+            showLoginError('Invalid credentials. Please check your email and password.');
+        } else if (error.code === 'auth/invalid-email') {
+            showLoginError('Please enter a valid email address.');
         } else {
             showLoginError('Login failed. Please try again.');
         }
@@ -114,6 +114,7 @@ async function handleRegister() {
 
     const firstName = document.getElementById('reg-first-name').value.trim();
     const lastName = document.getElementById('reg-last-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
     const certId = document.getElementById('reg-cert-id').value.trim();
     const gender = document.getElementById('reg-gender').value;
     const password = document.getElementById('reg-password').value;
@@ -127,6 +128,11 @@ async function handleRegister() {
 
     if (!lastName) {
         showRegisterError('Last name is required.');
+        return;
+    }
+
+    if (!email) {
+        showRegisterError('Email address is required.');
         return;
     }
 
@@ -154,9 +160,7 @@ async function handleRegister() {
     isRegistering = true;
 
     try {
-        // Create Firebase Auth account first
-        // If the certId is already taken, this will throw auth/email-already-in-use
-        const email = `pilot${certId}@acepilotlog.app`;
+        // Create Firebase Auth account with real email
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         currentUser = userCredential.user;
 
@@ -164,6 +168,7 @@ async function handleRegister() {
         const pilotData = {
             firstName: firstName,
             lastName: lastName,
+            email: email,
             certId: certId,
             gender: gender,
             uid: currentUser.uid,
@@ -236,7 +241,9 @@ async function handleRegister() {
         console.error('Registration error:', error);
         isRegistering = false;
         if (error.code === 'auth/email-already-in-use') {
-            showRegisterError('This Certificate ID is already registered. Please login instead.');
+            showRegisterError('This email is already registered. Please login instead.');
+        } else if (error.code === 'auth/invalid-email') {
+            showRegisterError('Please enter a valid email address.');
         } else {
             showRegisterError('Registration failed: ' + error.message);
         }
@@ -246,12 +253,12 @@ async function handleRegister() {
 }
 
 /**
- * Load pilot data from Firestore
+ * Load pilot data from Firestore by UID
  */
-async function loadPilotData(certId) {
-    const doc = await db.collection('pilots').doc(certId).get();
-    if (doc.exists) {
-        currentPilotData = doc.data();
+async function loadPilotData(uid) {
+    const snapshot = await db.collection('pilots').where('uid', '==', uid).limit(1).get();
+    if (!snapshot.empty) {
+        currentPilotData = snapshot.docs[0].data();
     } else {
         throw new Error('Pilot data not found.');
     }
@@ -289,7 +296,7 @@ function showLoginScreen() {
     document.getElementById('login-screen').classList.add('active');
 
     // Clear form inputs
-    document.getElementById('login-cert-id').value = '';
+    document.getElementById('login-email').value = '';
     document.getElementById('login-password').value = '';
     clearErrors();
 }
@@ -303,12 +310,9 @@ auth.onAuthStateChanged(async (user) => {
 
     if (user) {
         currentUser = user;
-        // Extract cert ID from email: pilot12345@acepilotlog.app -> 12345
-        const email = user.email;
-        const certId = email.replace('pilot', '').replace('@acepilotlog.app', '');
 
         try {
-            await loadPilotData(certId);
+            await loadPilotData(user.uid);
             showAppScreen();
         } catch (error) {
             console.error('Failed to load pilot data:', error);
