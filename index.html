@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACE Pilot Training Log</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+    <!-- ==================== LOGIN SCREEN ==================== -->
+    <div id="login-screen" class="screen active">
+        <div class="login-container">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i class="fas fa-plane"></i>
+                </div>
+                <h1 class="app-title">ACE</h1>
+                <p class="app-subtitle">Pilot Training Log</p>
+                <div class="accent-line"></div>
+            </div>
+
+            <div class="login-card neo-card">
+                <div id="login-form-section">
+                    <h2 class="form-title">Pilot Login</h2>
+                    <p class="form-desc">Enter your last 5 digits of your pilot certificate</p>
+
+                    <div class="input-group">
+                        <label for="login-cert-id">Certificate ID (Last 5 Digits)</label>
+                        <div class="neo-input-wrapper">
+                            <i class="fas fa-id-badge"></i>
+                            <input type="text" id="login-cert-id" maxlength="5" pattern="[0-9]{5}" placeholder="e.g. 23456" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="login-password">Password</label>
+                        <div class="neo-input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="login-password" placeholder="Enter your password">
+                        </div>
+                    </div>
+
+                    <div id="login-error" class="error-message hidden"></div>
+
+                    <button id="login-btn" class="neo-btn primary-btn" onclick="handleLogin()">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
+
+                    <div class="form-footer">
+                        <p>New pilot? <a href="#" onclick="showRegister()">Create Account</a></p>
+                    </div>
+                </div>
+
+                <div id="register-form-section" class="hidden">
+                    <h2 class="form-title">New Pilot Registration</h2>
+                    <p class="form-desc">Create your training log account</p>
+
+                    <div class="input-group">
+                        <label for="reg-first-name">First Name</label>
+                        <div class="neo-input-wrapper">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="reg-first-name" placeholder="First name">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="reg-last-name">Last Name</label>
+                        <div class="neo-input-wrapper">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="reg-last-name" placeholder="Last name">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="reg-cert-id">Certificate ID (Last 5 Digits)</label>
+                        <div class="neo-input-wrapper">
+                            <i class="fas fa-id-badge"></i>
+                            <input type="text" id="reg-cert-id" maxlength="5" pattern="[0-9]{5}" placeholder="e.g. 23456" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="reg-gender">Gender</label>
+                        <div class="neo-select-wrapper">
+                            <i class="fas fa-venus-mars"></i>
+                            <select id="reg-gender">
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Non-Binary">Non-Binary</option>
+                                <option value="Prefer Not to Say">Prefer Not to Say</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="reg-password">Password</label>
+                        <div class="neo-input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="reg-password" placeholder="Create a password (min 6 chars)">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="reg-password-confirm">Confirm Password</label>
+                        <div class="neo-input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="reg-password-confirm" placeholder="Confirm your password">
+                        </div>
+                    </div>
+
+                    <div id="register-error" class="error-message hidden"></div>
+
+                    <button id="register-btn" class="neo-btn primary-btn" onclick="handleRegister()">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </button>
+
+                    <div class="form-footer">
+                        <p>Already registered? <a href="#" onclick="showLogin()">Sign In</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN APP (DASHBOARD) ==================== -->
+    <div id="app-screen" class="screen">
+        <!-- Top Navigation Bar -->
+        <nav class="top-nav">
+            <div class="nav-left">
+                <div class="nav-logo">
+                    <i class="fas fa-plane"></i>
+                    <span>ACE</span>
+                </div>
+            </div>
+            <div class="nav-center">
+                <button class="nav-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-tab" data-tab="training" onclick="switchTab('training')">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Training Log</span>
+                </button>
+                <button class="nav-tab" data-tab="profile" onclick="switchTab('profile')">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Profile</span>
+                </button>
+            </div>
+            <div class="nav-right">
+                <span id="nav-pilot-name" class="pilot-name"></span>
+                <button class="neo-btn-sm" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- ========== DASHBOARD TAB ========== -->
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="dashboard-container">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-line"></i> Training Progress</h2>
+                    <p>Your journey from student to certified pilot</p>
+                </div>
+
+                <!-- Overall Progress -->
+                <div class="progress-overview neo-card">
+                    <h3>Overall Completion</h3>
+                    <div class="overall-progress-bar">
+                        <div class="progress-track">
+                            <div id="overall-progress-fill" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span id="overall-progress-text" class="progress-percent">0%</span>
+                    </div>
+                </div>
+
+                <!-- Milestone Cards -->
+                <div class="milestone-grid">
+                    <!-- Transfer -->
+                    <div class="milestone-card neo-card" id="milestone-transfer">
+                        <div class="milestone-icon"><i class="fas fa-exchange-alt"></i></div>
+                        <h4>Transfer Status</h4>
+                        <div class="milestone-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" data-milestone="transfer" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-percent" data-milestone-text="transfer">0%</span>
+                        </div>
+                        <div class="milestone-stats">
+                            <span><i class="fas fa-clock"></i> <span data-stat="transferHours">--</span> hrs</span>
+                            <span><i class="fas fa-plane-arrival"></i> <span data-stat="transferLandings">--</span> ldg</span>
+                        </div>
+                    </div>
+
+                    <!-- Solo -->
+                    <div class="milestone-card neo-card" id="milestone-solo">
+                        <div class="milestone-icon"><i class="fas fa-user-astronaut"></i></div>
+                        <h4>First Solo</h4>
+                        <div class="milestone-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" data-milestone="solo" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-percent" data-milestone-text="solo">0%</span>
+                        </div>
+                        <div class="milestone-stats">
+                            <span><i class="fas fa-calendar"></i> <span data-stat="soloDate">--</span></span>
+                            <span><i class="fas fa-clock"></i> <span data-stat="soloHours">--</span> hrs</span>
+                        </div>
+                    </div>
+
+                    <!-- Private Pilot -->
+                    <div class="milestone-card neo-card" id="milestone-private">
+                        <div class="milestone-icon"><i class="fas fa-certificate"></i></div>
+                        <h4>Private Pilot</h4>
+                        <div class="milestone-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" data-milestone="private" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-percent" data-milestone-text="private">0%</span>
+                        </div>
+                        <div class="milestone-stats">
+                            <span><i class="fas fa-calendar"></i> <span data-stat="privateDate">--</span></span>
+                            <span><i class="fas fa-clock"></i> <span data-stat="privateHours">--</span> hrs</span>
+                        </div>
+                    </div>
+
+                    <!-- Instrument Rating -->
+                    <div class="milestone-card neo-card" id="milestone-instrument">
+                        <div class="milestone-icon"><i class="fas fa-cloud-sun"></i></div>
+                        <h4>Instrument Rating</h4>
+                        <div class="milestone-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" data-milestone="instrument" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-percent" data-milestone-text="instrument">0%</span>
+                        </div>
+                        <div class="milestone-stats">
+                            <span><i class="fas fa-calendar"></i> <span data-stat="instrumentDate">--</span></span>
+                            <span><i class="fas fa-clock"></i> <span data-stat="instrumentHours">--</span> hrs</span>
+                        </div>
+                    </div>
+
+                    <!-- Commercial -->
+                    <div class="milestone-card neo-card" id="milestone-commercial">
+                        <div class="milestone-icon"><i class="fas fa-plane-departure"></i></div>
+                        <h4>Commercial Pilot</h4>
+                        <div class="milestone-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" data-milestone="commercial" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-percent" data-milestone-text="commercial">0%</span>
+                        </div>
+                        <div class="milestone-stats">
+                            <span><i class="fas fa-calendar"></i> <span data-stat="commercialDate">--</span></span>
+                            <span><i class="fas fa-clock"></i> <span data-stat="commercialHours">--</span> hrs</span>
+                        </div>
+                    </div>
+
+                    <!-- CFI -->
+                    <div class="milestone-card neo-card" id="milestone-cfi">
+                        <div class="milestone-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                        <h4>CFI Rating</h4>
+                        <div class="milestone-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" data-milestone="cfi" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-percent" data-milestone-text="cfi">0%</span>
+                        </div>
+                        <div class="milestone-stats">
+                            <span><i class="fas fa-calendar"></i> <span data-stat="cfiDate">--</span></span>
+                            <span><i class="fas fa-clock"></i> <span data-stat="cfiHours">--</span> hrs</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flight Hours Summary -->
+                <div class="hours-summary neo-card">
+                    <h3><i class="fas fa-stopwatch"></i> Flight Hours Summary</h3>
+                    <div class="hours-grid">
+                        <div class="hour-stat">
+                            <span class="hour-value" id="stat-total-hours">0</span>
+                            <span class="hour-label">Total Hours</span>
+                        </div>
+                        <div class="hour-stat">
+                            <span class="hour-value" id="stat-total-landings">0</span>
+                            <span class="hour-label">Total Landings</span>
+                        </div>
+                        <div class="hour-stat">
+                            <span class="hour-value" id="stat-certificates">0</span>
+                            <span class="hour-label">Certificates</span>
+                        </div>
+                        <div class="hour-stat">
+                            <span class="hour-value" id="stat-ratings">0</span>
+                            <span class="hour-label">Ratings</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== TRAINING LOG TAB ========== -->
+        <div id="tab-training" class="tab-content">
+            <div class="training-container">
+                <div class="section-header">
+                    <h2><i class="fas fa-clipboard-list"></i> Training Log</h2>
+                    <p>Record and track your pilot training milestones</p>
+                </div>
+
+                <div id="training-form">
+                    <!-- Transfer Student Section -->
+                    <div class="form-section neo-card">
+                        <div class="form-section-header" onclick="toggleSection('transfer-section')">
+                            <h3><i class="fas fa-exchange-alt"></i> Transfer Student Information</h3>
+                            <i class="fas fa-chevron-down section-toggle"></i>
+                        </div>
+                        <div id="transfer-section" class="form-section-body">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Transfer Student</label>
+                                    <div class="neo-select-wrapper">
+                                        <select id="field-transferStudent" data-field="transferStudent">
+                                            <option value="">Select</option>
+                                            <option value="Yes">Yes</option>
+                                            <option value="No">No</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Transfer Hours</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" step="0.1" id="field-transferHours" data-field="transferHours" placeholder="0.0">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Transfer Landings</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" id="field-transferLandings" data-field="transferLandings" placeholder="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Solo Flight Section -->
+                    <div class="form-section neo-card">
+                        <div class="form-section-header" onclick="toggleSection('solo-section')">
+                            <h3><i class="fas fa-user-astronaut"></i> First Solo Flight</h3>
+                            <i class="fas fa-chevron-down section-toggle"></i>
+                        </div>
+                        <div id="solo-section" class="form-section-body">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Solo Date</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="date" id="field-soloDate" data-field="soloDate">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Age at Solo</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" id="field-soloAge" data-field="soloAge" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Solo Hours</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" step="0.1" id="field-soloHours" data-field="soloHours" placeholder="0.0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Solo Landings</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" id="field-soloLandings" data-field="soloLandings" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Solo Airplane (Tail #)</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="text" id="field-soloAirplane" data-field="soloAirplane" placeholder="e.g. N15RA">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Private Pilot Section -->
+                    <div class="form-section neo-card">
+                        <div class="form-section-header" onclick="toggleSection('private-section')">
+                            <h3><i class="fas fa-certificate"></i> Private Pilot License (PPL)</h3>
+                            <i class="fas fa-chevron-down section-toggle"></i>
+                        </div>
+                        <div id="private-section" class="form-section-body">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Private Pilot Date</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="date" id="field-privateDate" data-field="privateDate">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Age at Private</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" id="field-privateAge" data-field="privateAge" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Private Hours</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" step="0.1" id="field-privateHours" data-field="privateHours" placeholder="0.0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Private Landings</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" id="field-privateLandings" data-field="privateLandings" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Private Airplane (Tail #)</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="text" id="field-privateAirplane" data-field="privateAirplane" placeholder="e.g. N15RA">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Written Exam</label>
+                                    <div class="neo-select-wrapper">
+                                        <select id="field-privateWrittenExam" data-field="privateWrittenExam">
+                                            <option value="">Select</option>
+                                            <option value="Pass">Pass</option>
+                                            <option value="Retake">Retake</option>
+                                            <option value="Pending">Pending</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Checkride Attempts</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" id="field-privateCheckrideAttempts" data-field="privateCheckrideAttempts" placeholder="1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Instrument Rating Section -->
+                    <div class="form-section neo-card">
+                        <div class="form-section-header" onclick="toggleSection('instrument-section')">
+                            <h3><i class="fas fa-cloud-sun"></i> Instrument Rating</h3>
+                            <i class="fas fa-chevron-down section-toggle"></i>
+                        </div>
+                        <div id="instrument-section" class="form-section-body">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Instrument Rating</label>
+                                    <div class="neo-select-wrapper">
+                                        <select id="field-instrumentRating" data-field="instrumentRating">
+                                            <option value="">Select</option>
+                                            <option value="Yes">Yes</option>
+                                            <option value="No">No</option>
+                                            <option value="In Progress">In Progress</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Instrument Date</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="date" id="field-instrumentDate" data-field="instrumentDate">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Instrument Hours</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" step="0.1" id="field-instrumentHours" data-field="instrumentHours" placeholder="0.0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Instrument Airplane (Tail #)</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="text" id="field-instrumentAirplane" data-field="instrumentAirplane" placeholder="e.g. N43700">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Instrument Written Exam</label>
+                                    <div class="neo-select-wrapper">
+                                        <select id="field-instrumentWrittenExam" data-field="instrumentWrittenExam">
+                                            <option value="">Select</option>
+                                            <option value="Pass">Pass</option>
+                                            <option value="Retake">Retake</option>
+                                            <option value="Pending">Pending</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Commercial Pilot Section -->
+                    <div class="form-section neo-card">
+                        <div class="form-section-header" onclick="toggleSection('commercial-section')">
+                            <h3><i class="fas fa-plane-departure"></i> Commercial Pilot License (CPL)</h3>
+                            <i class="fas fa-chevron-down section-toggle"></i>
+                        </div>
+                        <div id="commercial-section" class="form-section-body">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Commercial Date</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="date" id="field-commercialDate" data-field="commercialDate">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Age at Commercial</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" id="field-commercialAge" data-field="commercialAge" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Commercial Hours</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" step="0.1" id="field-commercialHours" data-field="commercialHours" placeholder="0.0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Commercial Airplane (Tail #)</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="text" id="field-commercialAirplane" data-field="commercialAirplane" placeholder="e.g. N43700">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Commercial Written Exam</label>
+                                    <div class="neo-select-wrapper">
+                                        <select id="field-commercialWrittenExam" data-field="commercialWrittenExam">
+                                            <option value="">Select</option>
+                                            <option value="Pass">Pass</option>
+                                            <option value="Retake">Retake</option>
+                                            <option value="Pending">Pending</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Checkride Attempts</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" id="field-commercialCheckrideAttempts" data-field="commercialCheckrideAttempts" placeholder="1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Multi-Engine Rating Section -->
+                    <div class="form-section neo-card">
+                        <div class="form-section-header" onclick="toggleSection('multiengine-section')">
+                            <h3><i class="fas fa-cogs"></i> Multi-Engine Rating</h3>
+                            <i class="fas fa-chevron-down section-toggle"></i>
+                        </div>
+                        <div id="multiengine-section" class="form-section-body">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Multi-Engine Rating</label>
+                                    <div class="neo-select-wrapper">
+                                        <select id="field-multiEngineRating" data-field="multiEngineRating">
+                                            <option value="">Select</option>
+                                            <option value="Yes">Yes</option>
+                                            <option value="No">No</option>
+                                            <option value="In Progress">In Progress</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Multi-Engine Date</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="date" id="field-multiEngineDate" data-field="multiEngineDate">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Multi-Engine Hours</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" step="0.1" id="field-multiEngineHours" data-field="multiEngineHours" placeholder="0.0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Multi-Engine Airplane (Tail #)</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="text" id="field-multiEngineAirplane" data-field="multiEngineAirplane" placeholder="e.g. N12345">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CFI Section -->
+                    <div class="form-section neo-card">
+                        <div class="form-section-header" onclick="toggleSection('cfi-section')">
+                            <h3><i class="fas fa-chalkboard-teacher"></i> Certified Flight Instructor (CFI)</h3>
+                            <i class="fas fa-chevron-down section-toggle"></i>
+                        </div>
+                        <div id="cfi-section" class="form-section-body">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>CFI Certificate</label>
+                                    <div class="neo-select-wrapper">
+                                        <select id="field-cfiCertificate" data-field="cfiCertificate">
+                                            <option value="">Select</option>
+                                            <option value="Yes">Yes</option>
+                                            <option value="No">No</option>
+                                            <option value="In Progress">In Progress</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>CFI Date</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="date" id="field-cfiDate" data-field="cfiDate">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>CFI Hours</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="number" step="0.1" id="field-cfiHours" data-field="cfiHours" placeholder="0.0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>CFII (Instrument Instructor)</label>
+                                    <div class="neo-select-wrapper">
+                                        <select id="field-cfiiCertificate" data-field="cfiiCertificate">
+                                            <option value="">Select</option>
+                                            <option value="Yes">Yes</option>
+                                            <option value="No">No</option>
+                                            <option value="In Progress">In Progress</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>MEI (Multi-Engine Instructor)</label>
+                                    <div class="neo-select-wrapper">
+                                        <select id="field-meiCertificate" data-field="meiCertificate">
+                                            <option value="">Select</option>
+                                            <option value="Yes">Yes</option>
+                                            <option value="No">No</option>
+                                            <option value="In Progress">In Progress</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Education & Career Section -->
+                    <div class="form-section neo-card">
+                        <div class="form-section-header" onclick="toggleSection('education-section')">
+                            <h3><i class="fas fa-graduation-cap"></i> Education & Career</h3>
+                            <i class="fas fa-chevron-down section-toggle"></i>
+                        </div>
+                        <div id="education-section" class="form-section-body">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>College Attended</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="text" id="field-collegeAttended" data-field="collegeAttended" placeholder="University name">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Major / Degree</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="text" id="field-major" data-field="major" placeholder="e.g. Aviation Science">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>First Airline Job</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="text" id="field-firstAirlineJob" data-field="firstAirlineJob" placeholder="Airline name">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Additional Ratings</label>
+                                    <div class="neo-input-wrapper compact">
+                                        <input type="text" id="field-additionalRatings" data-field="additionalRatings" placeholder="e.g. ATP, SES, etc.">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Save Button -->
+                    <div class="form-actions">
+                        <button id="save-training-btn" class="neo-btn primary-btn" onclick="saveTrainingData()">
+                            <i class="fas fa-save"></i> Save Training Data
+                        </button>
+                        <div id="save-status" class="save-status hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== PROFILE TAB ========== -->
+        <div id="tab-profile" class="tab-content">
+            <div class="profile-container">
+                <div class="section-header">
+                    <h2><i class="fas fa-user-circle"></i> Pilot Profile</h2>
+                    <p>Your personal information and account details</p>
+                </div>
+
+                <div class="profile-card neo-card">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="profile-info">
+                        <h3 id="profile-name">--</h3>
+                        <p class="profile-cert">Certificate #: <span id="profile-cert-id">--</span></p>
+                        <p class="profile-gender">Gender: <span id="profile-gender">--</span></p>
+                        <p class="profile-joined">Member since: <span id="profile-joined">--</span></p>
+                    </div>
+                </div>
+
+                <div class="profile-stats-card neo-card">
+                    <h3><i class="fas fa-trophy"></i> Achievements</h3>
+                    <div id="achievements-list" class="achievements-grid">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <div class="profile-actions">
+                    <button class="neo-btn danger-btn" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <div class="spinner-ring"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
