@@ -6,6 +6,7 @@
 // Current user state
 let currentUser = null;
 let currentPilotData = null;
+let isRegistering = false;
 
 /**
  * Show the login form, hide registration
@@ -150,17 +151,11 @@ async function handleRegister() {
     }
 
     showLoading(true);
+    isRegistering = true;
 
     try {
-        // Check if certificate ID is already taken
-        const existingDoc = await db.collection('pilots').doc(certId).get();
-        if (existingDoc.exists) {
-            showRegisterError('This Certificate ID is already registered. Please login instead.');
-            showLoading(false);
-            return;
-        }
-
-        // Create Firebase Auth account
+        // Create Firebase Auth account first
+        // If the certId is already taken, this will throw auth/email-already-in-use
         const email = `pilot${certId}@acepilotlog.app`;
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         currentUser = userCredential.user;
@@ -234,10 +229,12 @@ async function handleRegister() {
         await db.collection('pilots').doc(certId).set(pilotData);
 
         currentPilotData = pilotData;
+        isRegistering = false;
         showAppScreen();
         showToast('Account created successfully!');
     } catch (error) {
         console.error('Registration error:', error);
+        isRegistering = false;
         if (error.code === 'auth/email-already-in-use') {
             showRegisterError('This Certificate ID is already registered. Please login instead.');
         } else {
@@ -301,6 +298,9 @@ function showLoginScreen() {
  * Listen for auth state changes
  */
 auth.onAuthStateChanged(async (user) => {
+    // Skip if registration is in progress — handleRegister manages the flow
+    if (isRegistering) return;
+
     if (user) {
         currentUser = user;
         // Extract cert ID from email: pilot12345@acepilotlog.app -> 12345
