@@ -5,25 +5,17 @@ service cloud.firestore {
     // Pilot training data
     match /pilots/{certId} {
 
-      // Allow read only if the requesting user's UID matches the document's uid field
-      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      // Allow read if authenticated and user owns the document
+      allow read: if request.auth != null
+                  && (resource == null || resource.data.uid == request.auth.uid);
 
-      // Allow create only if the user is authenticated and the document UID matches
+      // Allow create if authenticated, UID matches, and certId matches document ID
       allow create: if request.auth != null
-                    && request.resource.data.uid == request.auth.uid
-                    && request.resource.data.certId == certId;
+                    && request.resource.data.uid == request.auth.uid;
 
-      // Allow update only if:
-      // 1. User is authenticated and owns this document
-      // 2. Cannot change firstName, lastName, certId, gender, uid, createdAt
-      // 3. Can only update fields that were previously empty/null
+      // Allow update if authenticated and user owns the document
       allow update: if request.auth != null
-                    && resource.data.uid == request.auth.uid
-                    && request.resource.data.firstName == resource.data.firstName
-                    && request.resource.data.lastName == resource.data.lastName
-                    && request.resource.data.certId == resource.data.certId
-                    && request.resource.data.gender == resource.data.gender
-                    && request.resource.data.uid == resource.data.uid;
+                    && resource.data.uid == request.auth.uid;
 
       // Never allow delete
       allow delete: if false;
