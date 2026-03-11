@@ -10,6 +10,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
+  <!-- jsPDF for PDF reports -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
@@ -112,6 +115,35 @@
       transition: all 0.3s ease; font-size: 16px;
     }
     .theme-toggle:hover { color: var(--neon); border-color: var(--border-hi); }
+
+    /* ── Admin Sub-tabs ── */
+    .admin-tabs { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
+    .admin-tab {
+      padding: 8px 20px; border-radius: 8px;
+      font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); cursor: pointer;
+      transition: all 0.2s;
+    }
+    .admin-tab:hover { color: var(--text-dim); border-color: var(--border-hi); background: var(--neon-subtle); }
+    .admin-tab.active { color: var(--neon); background: rgba(57,255,20,0.1); border-color: var(--border-hi); }
+    body.light .admin-tab.active { color: var(--neon); background: rgba(13,138,62,0.08); border-color: var(--border-hi); }
+
+    .admin-stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+    .admin-search-input { max-width: 400px; margin-bottom: 20px; }
+
+    .report-card {
+      padding: 24px; cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .report-card:hover { border-color: var(--border-hi); transform: translateY(-2px); }
+    .report-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: var(--neon-subtle); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 14px;
+    }
 
     h1,h2,h3,h4 { font-family: 'Orbitron', sans-serif; }
 
@@ -658,6 +690,7 @@
       <button class="nav-tab active" id="tab-dashboard" onclick="showSection('dashboard')"><span class="dot"></span> Dashboard</button>
       <button class="nav-tab" id="tab-training" onclick="showSection('training')"><span class="dot"></span> Training Log</button>
       <button class="nav-tab" id="tab-profile" onclick="showSection('profile')"><span class="dot"></span> Profile</button>
+      <button class="nav-tab" id="tab-admin" onclick="showSection('admin')" style="display:none;"><span class="dot"></span> Admin</button>
     </div>
     <div class="nav-right">
       <span class="nav-user" id="nav-user-name"></span>
@@ -1047,6 +1080,121 @@
       </div>
     </section>
 
+    <!-- ═══ ADMIN ═══ -->
+    <section id="sec-admin" style="display:none;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;">
+        <div>
+          <div style="display:flex; align-items:center;"><span class="section-icon">⚙️</span><h2 class="section-title">Administration</h2></div>
+          <p class="section-sub">Manage students, reports, and school operations</p>
+        </div>
+        <button class="btn-ghost" onclick="loadAllStudents()">↻ Refresh Data</button>
+      </div>
+
+      <!-- Admin Sub-tabs -->
+      <div class="admin-tabs">
+        <button class="admin-tab active" id="atab-overview" onclick="showAdminTab('overview')">Overview</button>
+        <button class="admin-tab" id="atab-students" onclick="showAdminTab('students')">All Students</button>
+        <button class="admin-tab" id="atab-search" onclick="showAdminTab('search')">Search</button>
+        <button class="admin-tab" id="atab-reports" onclick="showAdminTab('reports')">Reports</button>
+      </div>
+
+      <!-- OVERVIEW -->
+      <div id="asec-overview">
+        <div class="admin-stat-grid">
+          <div class="neo-card stat-box"><div class="stat-value" id="adm-total">0</div><div class="stat-label">Total Students</div></div>
+          <div class="neo-card stat-box"><div class="stat-value" id="adm-solo">0</div><div class="stat-label">Solo Achieved</div></div>
+          <div class="neo-card stat-box"><div class="stat-value" id="adm-private">0</div><div class="stat-label">Private Certified</div></div>
+          <div class="neo-card stat-box"><div class="stat-value" id="adm-instrument">0</div><div class="stat-label">Instrument Rated</div></div>
+        </div>
+        <div class="neo-card" style="padding:24px; overflow:hidden;">
+          <div style="font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-bottom:16px;">Student Progress</div>
+          <div style="overflow-x:auto;">
+            <table class="log-table" id="adm-overview-table">
+              <thead><tr><th>Name</th><th>Cert #</th><th>Solo</th><th>Private</th><th>Instrument</th><th>Commercial</th><th>CFI</th></tr></thead>
+              <tbody id="adm-overview-tbody"></tbody>
+            </table>
+          </div>
+          <div id="adm-overview-empty" style="padding:40px 24px; text-align:center; color:var(--text-muted); font-size:13px;">Loading students…</div>
+        </div>
+      </div>
+
+      <!-- ALL STUDENTS -->
+      <div id="asec-students" style="display:none;">
+        <div class="neo-card" style="padding:24px; overflow:hidden;">
+          <div style="font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-bottom:16px;">All Student Records</div>
+          <div style="overflow-x:auto;">
+            <table class="log-table" id="adm-students-table">
+              <thead><tr><th>Name</th><th>Email</th><th>Cert #</th><th>Gender</th><th>College</th><th>Transfer Hrs</th><th>Solo</th><th>Private</th><th>Instrument</th><th>Commercial</th><th>CFI</th></tr></thead>
+              <tbody id="adm-students-tbody"></tbody>
+            </table>
+          </div>
+          <div id="adm-students-empty" style="padding:40px 24px; text-align:center; color:var(--text-muted); font-size:13px;">Loading students…</div>
+        </div>
+      </div>
+
+      <!-- SEARCH -->
+      <div id="asec-search" style="display:none;">
+        <div class="neo-card" style="padding:24px;">
+          <div style="font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-bottom:16px;">Search Students</div>
+          <input id="adm-search-input" type="text" class="form-input admin-search-input" placeholder="Search by name, email, or cert #…" oninput="filterAdminStudents(this.value)">
+          <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+            <label class="form-label" style="margin-bottom:0; padding-top:6px;">Filter by milestone:</label>
+            <select id="adm-filter-milestone" class="form-input" style="width:auto; min-width:160px;" onchange="filterAdminStudents(document.getElementById('adm-search-input').value)">
+              <option value="">All Students</option>
+              <option value="solo">Solo Achieved</option>
+              <option value="private">Private Certified</option>
+              <option value="instrument">Instrument Rated</option>
+              <option value="commercial">Commercial Licensed</option>
+              <option value="cfi">CFI Certified</option>
+              <option value="no-solo">No Solo Yet</option>
+            </select>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="log-table" id="adm-search-table">
+              <thead><tr><th>Name</th><th>Email</th><th>Cert #</th><th>Solo</th><th>Private</th><th>Instrument</th><th>Hours</th></tr></thead>
+              <tbody id="adm-search-tbody"></tbody>
+            </table>
+          </div>
+          <div id="adm-search-empty" style="padding:40px 24px; text-align:center; color:var(--text-muted); font-size:13px;">Type to search…</div>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div id="asec-reports" style="display:none;">
+        <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:18px;">
+          <div class="neo-card report-card" onclick="generateStudentProgressReport()">
+            <div class="report-icon">📋</div>
+            <div style="font-family:'Orbitron',sans-serif; font-size:14px; font-weight:700; color:var(--text); margin-bottom:6px;">Student Progress</div>
+            <p style="font-size:12px; color:var(--text-dim); line-height:1.5;">Select a student and generate a detailed milestone report.</p>
+          </div>
+          <div class="neo-card report-card" onclick="generateClassOverviewReport()">
+            <div class="report-icon">📊</div>
+            <div style="font-family:'Orbitron',sans-serif; font-size:14px; font-weight:700; color:var(--text); margin-bottom:6px;">Class Overview</div>
+            <p style="font-size:12px; color:var(--text-dim); line-height:1.5;">Summary of all students with milestone status.</p>
+          </div>
+          <div class="neo-card report-card" onclick="generateFlightHoursReport()">
+            <div class="report-icon">⏱️</div>
+            <div style="font-family:'Orbitron',sans-serif; font-size:14px; font-weight:700; color:var(--text); margin-bottom:6px;">Flight Hours Summary</div>
+            <p style="font-size:12px; color:var(--text-dim); line-height:1.5;">Aggregate flight hours across all students.</p>
+          </div>
+          <div class="neo-card report-card" onclick="generateFleetReport()">
+            <div class="report-icon">✈️</div>
+            <div style="font-family:'Orbitron',sans-serif; font-size:14px; font-weight:700; color:var(--text); margin-bottom:6px;">Fleet Report</div>
+            <p style="font-size:12px; color:var(--text-dim); line-height:1.5;">Aircraft usage and fleet status summary.</p>
+          </div>
+        </div>
+        <!-- Student picker for individual report -->
+        <div id="student-report-picker" style="display:none; margin-top:20px;">
+          <div class="neo-card" style="padding:24px;">
+            <div style="font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-bottom:12px;">Select Student</div>
+            <select id="report-student-select" class="form-input" style="max-width:400px; margin-bottom:14px;"><option value="">Choose a student…</option></select>
+            <button class="btn-primary" onclick="downloadStudentReport()">Download PDF</button>
+            <button class="btn-ghost" style="margin-left:8px;" onclick="document.getElementById('student-report-picker').style.display='none'">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -1097,6 +1245,7 @@
   let currentUser = null, authMode = 'signin';
   let trainingData = null, userCert = '';
   let isSavingTraining = false, isSavingProfile = false;
+  let isAdmin = false, allStudents = [];
 
   // Auth observer
   auth.onAuthStateChanged(user => {
@@ -1109,6 +1258,9 @@
     document.getElementById('v-app').style.display = 'none';
     if (userDataUnsub) { userDataUnsub(); userDataUnsub = null; }
     trainingData = null;
+    isAdmin = false;
+    allStudents = [];
+    document.getElementById('tab-admin').style.display = 'none';
   }
 
   function showApp(user) {
@@ -1123,19 +1275,23 @@
     // Initialize profile email field
     document.getElementById('p-email').value = user.email || '';
     renderAchievements(null);
+    checkAdminRole(user.uid);
   }
 
   function showSection(name) {
-    ['dashboard','training','profile'].forEach(s => {
-      document.getElementById('sec-'+s).style.display = s===name ? 'block' : 'none';
-      document.getElementById('tab-'+s).classList.toggle('active', s===name);
+    ['dashboard','training','profile','admin'].forEach(s => {
+      const sec = document.getElementById('sec-'+s);
+      if (sec) sec.style.display = s===name ? 'block' : 'none';
+      const tab = document.getElementById('tab-'+s);
+      if (tab) tab.classList.toggle('active', s===name);
     });
-    // Re-populate forms when switching to them (fixes hidden element issue)
+    // Re-populate forms when switching to them
     if (trainingData) {
       if (name === 'training') populateTrainingForm(trainingData);
       if (name === 'profile') loadProfileForm(trainingData);
       if (name === 'dashboard') renderDashboard(trainingData);
     }
+    if (name === 'admin' && allStudents.length === 0) loadAllStudents();
   }
 
   // Auth
@@ -1746,6 +1902,357 @@
         <div class="achieve-label">${a.label}</div>
       </div>`;
     }).join('');
+  }
+
+  // ══════════════════════════════════════════════════
+  //  ADMIN
+  // ══════════════════════════════════════════════════
+
+  async function checkAdminRole(uid) {
+    try {
+      const doc = await db.collection('users').doc(uid).get();
+      isAdmin = !!(doc.exists && doc.data().isAdmin === true);
+    } catch(e) { isAdmin = false; }
+    document.getElementById('tab-admin').style.display = isAdmin ? '' : 'none';
+    console.log('Admin role:', isAdmin);
+  }
+
+  function showAdminTab(name) {
+    ['overview','students','search','reports'].forEach(t => {
+      const sec = document.getElementById('asec-'+t);
+      if (sec) sec.style.display = t===name ? 'block' : 'none';
+      const tab = document.getElementById('atab-'+t);
+      if (tab) tab.classList.toggle('active', t===name);
+    });
+  }
+
+  async function loadAllStudents() {
+    try {
+      const snap = await db.collection('users').get();
+      allStudents = snap.docs.map(d => ({uid: d.id, ...d.data()}));
+      console.log('Admin: loaded', allStudents.length, 'students');
+      renderAdminOverview();
+      renderAdminStudents();
+      renderAdminSearch('');
+    } catch(e) {
+      console.error('loadAllStudents:', e);
+      showToast('Failed to load students.');
+    }
+  }
+
+  function renderAdminOverview() {
+    const total = allStudents.length;
+    const solo = allStudents.filter(s => s.soloDate).length;
+    const priv = allStudents.filter(s => s.privateDate).length;
+    const inst = allStudents.filter(s => s.instrumentDate).length;
+    setText('adm-total', total);
+    setText('adm-solo', solo);
+    setText('adm-private', priv);
+    setText('adm-instrument', inst);
+
+    const tbody = document.getElementById('adm-overview-tbody');
+    const empty = document.getElementById('adm-overview-empty');
+    const table = document.getElementById('adm-overview-table');
+    if (!allStudents.length) { table.style.display='none'; empty.style.display='block'; empty.textContent='No students found.'; return; }
+    table.style.display=''; empty.style.display='none';
+    const check = v => v ? '<span style="color:var(--neon);font-weight:700;">✓</span>' : '<span style="color:var(--text-muted);">—</span>';
+    tbody.innerHTML = allStudents.map(s => {
+      const name = [s.firstName, s.lastName].filter(Boolean).join(' ') || s.displayName || s.email || '—';
+      return `<tr>
+        <td class="td-hi">${esc(name)}</td>
+        <td>${esc(s.certNumber||'—')}</td>
+        <td>${check(s.soloDate)}</td>
+        <td>${check(s.privateDate)}</td>
+        <td>${check(s.instrumentDate)}</td>
+        <td>${check(s.commercialDate)}</td>
+        <td>${check(s.cfiDate||s.cfiCertificate==='Yes')}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderAdminStudents() {
+    const tbody = document.getElementById('adm-students-tbody');
+    const empty = document.getElementById('adm-students-empty');
+    const table = document.getElementById('adm-students-table');
+    if (!allStudents.length) { table.style.display='none'; empty.style.display='block'; empty.textContent='No students found.'; return; }
+    table.style.display=''; empty.style.display='none';
+    const fmtD = d => d ? (typeof d === 'string' ? d : '—') : '—';
+    tbody.innerHTML = allStudents.map(s => {
+      const name = [s.firstName, s.lastName].filter(Boolean).join(' ') || s.displayName || '—';
+      const totalHrs = Math.max(parseFloat(s.cfiHours)||0, parseFloat(s.commercialHours)||0, parseFloat(s.instrumentHours)||0, parseFloat(s.privateHours)||0, parseFloat(s.soloHours)||0) + (parseFloat(s.transferHours)||0);
+      return `<tr>
+        <td class="td-hi">${esc(name)}</td>
+        <td>${esc(s.email||'—')}</td>
+        <td>${esc(s.certNumber||'—')}</td>
+        <td>${esc(s.gender||'—')}</td>
+        <td>${esc(s.collegeAttended||s.college||'—')}</td>
+        <td>${s.transferHours ? parseFloat(s.transferHours).toFixed(1) : '—'}</td>
+        <td>${fmtD(s.soloDate)}</td>
+        <td>${fmtD(s.privateDate)}</td>
+        <td>${fmtD(s.instrumentDate)}</td>
+        <td>${fmtD(s.commercialDate)}</td>
+        <td>${s.cfiCertificate==='Yes'||s.cfiDate ? 'Yes' : '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function filterAdminStudents(query) {
+    const q = (query||'').toLowerCase().trim();
+    const milestoneFilter = document.getElementById('adm-filter-milestone').value;
+    let filtered = allStudents;
+
+    if (q) {
+      filtered = filtered.filter(s => {
+        const name = [s.firstName, s.lastName, s.displayName, s.email, s.certNumber].filter(Boolean).join(' ').toLowerCase();
+        return name.includes(q);
+      });
+    }
+
+    if (milestoneFilter) {
+      switch(milestoneFilter) {
+        case 'solo': filtered = filtered.filter(s => s.soloDate); break;
+        case 'private': filtered = filtered.filter(s => s.privateDate); break;
+        case 'instrument': filtered = filtered.filter(s => s.instrumentDate); break;
+        case 'commercial': filtered = filtered.filter(s => s.commercialDate); break;
+        case 'cfi': filtered = filtered.filter(s => s.cfiDate || s.cfiCertificate === 'Yes'); break;
+        case 'no-solo': filtered = filtered.filter(s => !s.soloDate); break;
+      }
+    }
+
+    renderAdminSearch(q, filtered);
+  }
+
+  function renderAdminSearch(q, filtered) {
+    if (!filtered) filtered = allStudents;
+    const tbody = document.getElementById('adm-search-tbody');
+    const empty = document.getElementById('adm-search-empty');
+    const table = document.getElementById('adm-search-table');
+    if (!filtered.length) {
+      table.style.display='none'; empty.style.display='block';
+      empty.textContent = q ? 'No students match your search.' : 'Type to search or select a filter…';
+      return;
+    }
+    table.style.display=''; empty.style.display='none';
+    tbody.innerHTML = filtered.map(s => {
+      const name = [s.firstName, s.lastName].filter(Boolean).join(' ') || s.displayName || '—';
+      const totalHrs = Math.max(parseFloat(s.cfiHours)||0, parseFloat(s.commercialHours)||0, parseFloat(s.instrumentHours)||0, parseFloat(s.privateHours)||0, parseFloat(s.soloHours)||0) + (parseFloat(s.transferHours)||0);
+      const check = v => v ? '<span style="color:var(--neon);">✓</span>' : '<span style="color:var(--text-muted);">—</span>';
+      return `<tr>
+        <td class="td-hi">${esc(name)}</td>
+        <td>${esc(s.email||'—')}</td>
+        <td>${esc(s.certNumber||'—')}</td>
+        <td>${check(s.soloDate)}</td>
+        <td>${check(s.privateDate)}</td>
+        <td>${check(s.instrumentDate)}</td>
+        <td>${totalHrs > 0 ? totalHrs.toFixed(1) : '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // ── PDF Reports ────────────────────────────────
+  function pdfHeader(doc, title) {
+    doc.setFillColor(7,13,27); doc.rect(0,0,doc.internal.pageSize.getWidth(),24,'F');
+    doc.setTextColor(208,223,245); doc.setFont('helvetica','bold'); doc.setFontSize(14);
+    doc.text('ACE — Aviation Career Enrichment',14,11);
+    doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(106,127,160);
+    doc.text(title,14,19);
+    doc.text('Generated: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),doc.internal.pageSize.getWidth()-14,19,{align:'right'});
+    doc.setDrawColor(57,255,20); doc.setLineWidth(0.5); doc.line(14,24,doc.internal.pageSize.getWidth()-14,24);
+  }
+
+  function generateStudentProgressReport() {
+    document.getElementById('student-report-picker').style.display = 'block';
+    const sel = document.getElementById('report-student-select');
+    sel.innerHTML = '<option value="">Choose a student…</option>' +
+      allStudents.map(s => {
+        const name = [s.firstName, s.lastName].filter(Boolean).join(' ') || s.displayName || s.email;
+        return `<option value="${s.uid}">${esc(name)}</option>`;
+      }).join('');
+  }
+
+  function downloadStudentReport() {
+    const uid = document.getElementById('report-student-select').value;
+    if (!uid) { showToast('Please select a student.'); return; }
+    const s = allStudents.find(x => x.uid === uid);
+    if (!s) return;
+
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF();
+    const name = [s.firstName, s.lastName].filter(Boolean).join(' ') || s.displayName || 'Unknown';
+    pdfHeader(doc, 'Student Progress Report');
+
+    doc.setTextColor(208,223,245); doc.setFont('helvetica','bold'); doc.setFontSize(18);
+    doc.text(name, 14, 36);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(106,127,160);
+    const meta = [s.certNumber?'Cert #'+s.certNumber:null, s.gender, s.collegeAttended||s.college].filter(Boolean).join('   ·   ');
+    if (meta) doc.text(meta, 14, 43);
+
+    const milestones = [
+      {label:'Transfer', date:null, hours:s.transferHours, extra:'Landings: '+(s.transferLandings||'—')},
+      {label:'Solo', date:s.soloDate, hours:s.soloHours, extra:s.soloAirplane?'Aircraft: '+s.soloAirplane:''},
+      {label:'Private Pilot', date:s.privateDate, hours:s.privateHours, extra:s.privateAirplane?'Aircraft: '+s.privateAirplane:''},
+      {label:'Instrument', date:s.instrumentDate, hours:s.instrumentHours, extra:s.instrumentAirplane?'Aircraft: '+s.instrumentAirplane:''},
+      {label:'Commercial', date:s.commercialDate, hours:s.commercialHours, extra:s.commercialAirplane?'Aircraft: '+s.commercialAirplane:''},
+      {label:'CFI', date:s.cfiDate, hours:s.cfiHours, extra:s.cfiCertificate?'Certificate: '+s.cfiCertificate:''},
+    ];
+
+    let y = 54;
+    milestones.forEach(m => {
+      doc.setFillColor(15,28,48); doc.roundedRect(14,y,182,22,2,2,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(208,223,245);
+      doc.text(m.label, 20, y+9);
+      if (m.date) {
+        doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(57,255,20);
+        doc.text('✓ ' + m.date, 20, y+16);
+      } else if (parseFloat(m.hours) > 0) {
+        doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(106,127,160);
+        doc.text('In progress', 20, y+16);
+      } else {
+        doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(61,80,112);
+        doc.text('Not started', 20, y+16);
+      }
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(106,127,160);
+      const details = [m.hours ? parseFloat(m.hours).toFixed(1)+' hrs' : null, m.extra||null].filter(Boolean).join('   ·   ');
+      if (details) doc.text(details, 110, y+12);
+      y += 26;
+    });
+
+    doc.save('ACE_Student_' + name.replace(/\s+/g,'_') + '.pdf');
+    showToast('Report downloaded!');
+    document.getElementById('student-report-picker').style.display = 'none';
+  }
+
+  function generateClassOverviewReport() {
+    if (!allStudents.length) { showToast('No students loaded.'); return; }
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF({orientation:'landscape'});
+    pdfHeader(doc, 'Class Overview');
+
+    const headers = ['Name','Cert #','Gender','Solo','Private','Instrument','Commercial','CFI','College'];
+    const colW = [40,18,16,28,28,28,28,18,46];
+    let y = 32;
+    doc.setFillColor(22,38,64); doc.rect(14,y,colW.reduce((a,b)=>a+b,0),8,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(106,127,160);
+    let x = 14;
+    headers.forEach((h,i) => { doc.text(h.toUpperCase(), x+2, y+5.5); x += colW[i]; });
+    y += 10;
+
+    allStudents.forEach((s,idx) => {
+      if (y > 180) { doc.addPage(); pdfHeader(doc,'Class Overview (cont.)'); y = 32; }
+      if (idx%2===0) { doc.setFillColor(15,28,48); doc.rect(14,y,colW.reduce((a,b)=>a+b,0),7,'F'); }
+      doc.setFont('helvetica','normal'); doc.setFontSize(7);
+      x = 14;
+      const name = [s.firstName, s.lastName].filter(Boolean).join(' ') || s.displayName || '—';
+      const vals = [name, s.certNumber||'—', s.gender||'—', s.soloDate||'—', s.privateDate||'—', s.instrumentDate||'—', s.commercialDate||'—', s.cfiDate||(s.cfiCertificate==='Yes'?'Yes':'—'), s.collegeAttended||s.college||'—'];
+      vals.forEach((v,i) => {
+        const isDate = i>=3 && i<=7 && v!=='—';
+        doc.setTextColor(isDate?57:i===0?208:106, isDate?255:i===0?223:127, isDate?20:i===0?245:160);
+        doc.text(String(v).substring(0,20), x+2, y+5); x += colW[i];
+      });
+      y += 7;
+    });
+
+    doc.save('ACE_Class_Overview.pdf');
+    showToast('Report downloaded!');
+  }
+
+  function generateFlightHoursReport() {
+    if (!allStudents.length) { showToast('No students loaded.'); return; }
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF();
+    pdfHeader(doc, 'Flight Hours Summary');
+
+    doc.setTextColor(208,223,245); doc.setFont('helvetica','bold'); doc.setFontSize(16);
+    doc.text('Aggregate Flight Hours', 14, 36);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(106,127,160);
+    doc.text('Based on ' + allStudents.length + ' student records', 14, 43);
+
+    let totalTransfer=0, totalSolo=0, totalPrivate=0, totalInstrument=0, totalCommercial=0, totalCFI=0;
+    allStudents.forEach(s => {
+      totalTransfer += parseFloat(s.transferHours)||0;
+      totalSolo += parseFloat(s.soloHours)||0;
+      totalPrivate += parseFloat(s.privateHours)||0;
+      totalInstrument += parseFloat(s.instrumentHours)||0;
+      totalCommercial += parseFloat(s.commercialHours)||0;
+      totalCFI += parseFloat(s.cfiHours)||0;
+    });
+
+    const cats = [
+      {label:'Transfer Hours', val:totalTransfer},
+      {label:'Solo Hours', val:totalSolo},
+      {label:'Private Hours', val:totalPrivate},
+      {label:'Instrument Hours', val:totalInstrument},
+      {label:'Commercial Hours', val:totalCommercial},
+      {label:'CFI Hours', val:totalCFI},
+      {label:'Total Combined', val:totalTransfer+totalSolo+totalPrivate+totalInstrument+totalCommercial+totalCFI},
+    ];
+
+    let y = 52;
+    cats.forEach(c => {
+      doc.setFillColor(15,28,48); doc.roundedRect(14,y,182,14,2,2,'F');
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(106,127,160);
+      doc.text(c.label, 20, y+9);
+      doc.setFont('helvetica','bold'); doc.setTextColor(57,255,20);
+      doc.text(c.val.toFixed(1) + ' hrs', 182, y+9, {align:'right'});
+      y += 18;
+    });
+
+    doc.save('ACE_Flight_Hours_Summary.pdf');
+    showToast('Report downloaded!');
+  }
+
+  function generateFleetReport() {
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF();
+    pdfHeader(doc, 'Fleet / Aircraft Usage Report');
+
+    doc.setTextColor(208,223,245); doc.setFont('helvetica','bold'); doc.setFontSize(16);
+    doc.text('Aircraft Usage Summary', 14, 36);
+
+    // Collect unique aircraft from all students
+    const aircraft = {};
+    allStudents.forEach(s => {
+      ['soloAirplane','privateAirplane','instrumentAirplane','commercialAirplane','multiEngineAirplane'].forEach(key => {
+        const tail = (s[key]||'').trim().toUpperCase();
+        if (tail) {
+          if (!aircraft[tail]) aircraft[tail] = {tail, uses:0, milestones:[]};
+          aircraft[tail].uses++;
+          aircraft[tail].milestones.push(key.replace('Airplane',''));
+        }
+      });
+    });
+
+    const acList = Object.values(aircraft).sort((a,b) => b.uses - a.uses);
+
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(106,127,160);
+    doc.text(acList.length + ' unique aircraft found across ' + allStudents.length + ' students', 14, 43);
+
+    let y = 52;
+    if (!acList.length) {
+      doc.setFont('helvetica','italic'); doc.setFontSize(10); doc.setTextColor(61,80,112);
+      doc.text('No aircraft data recorded yet.', 14, y);
+    } else {
+      doc.setFillColor(22,38,64); doc.rect(14,y,182,8,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(106,127,160);
+      doc.text('TAIL #', 16, y+5.5); doc.text('USES', 80, y+5.5); doc.text('MILESTONES', 110, y+5.5);
+      y += 10;
+      acList.forEach((a,idx) => {
+        if (y > 270) { doc.addPage(); pdfHeader(doc,'Fleet (cont.)'); y = 32; }
+        if (idx%2===0) { doc.setFillColor(15,28,48); doc.rect(14,y,182,7,'F'); }
+        doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(208,223,245);
+        doc.text(a.tail, 16, y+5);
+        doc.setFont('helvetica','normal'); doc.setTextColor(106,127,160);
+        doc.text(String(a.uses), 80, y+5);
+        doc.setFontSize(8);
+        doc.text([...new Set(a.milestones)].join(', '), 110, y+5);
+        y += 7;
+      });
+    }
+
+    doc.save('ACE_Fleet_Report.pdf');
+    showToast('Report downloaded!');
   }
 </script>
 
