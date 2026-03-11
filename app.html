@@ -1002,6 +1002,7 @@
 
   let currentUser = null, authMode = 'signin';
   let trainingData = null, userCert = '';
+  let isSavingTraining = false, isSavingProfile = false;
 
   // Auth observer
   auth.onAuthStateChanged(user => {
@@ -1012,6 +1013,8 @@
   function showAuthView() {
     document.getElementById('v-auth').style.display = 'flex';
     document.getElementById('v-app').style.display = 'none';
+    if (userDataUnsub) { userDataUnsub(); userDataUnsub = null; }
+    trainingData = null;
   }
 
   function showApp(user) {
@@ -1021,7 +1024,8 @@
     document.getElementById('nav-user-name').textContent = name;
     showSection('dashboard');
     loadTrainingData(user.uid);
-    updateUserRecord(user);
+    // Delay updateUserRecord so listener gets the first snapshot first
+    setTimeout(() => updateUserRecord(user), 2000);
     // Initialize profile email field
     document.getElementById('p-email').value = user.email || '';
     renderAchievements(null);
@@ -1032,6 +1036,12 @@
       document.getElementById('sec-'+s).style.display = s===name ? 'block' : 'none';
       document.getElementById('tab-'+s).classList.toggle('active', s===name);
     });
+    // Re-populate forms when switching to them (fixes hidden element issue)
+    if (trainingData) {
+      if (name === 'training') populateTrainingForm(trainingData);
+      if (name === 'profile') loadProfileForm(trainingData);
+      if (name === 'dashboard') renderDashboard(trainingData);
+    }
   }
 
   // Auth
@@ -1071,18 +1081,8 @@
   async function handleGoogleSignIn() {
     hideError('auth-error');
     try {
-      const result = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-      const user = result.user;
-      // Save Google profile data to Firestore on first sign-in
-      if (user.displayName) {
-        const parts = user.displayName.split(' ');
-        const first = parts[0] || '';
-        const last = parts.slice(1).join(' ') || '';
-        await db.collection('users').doc(user.uid).set({
-          firstName: first, lastName: last, email: user.email || '',
-          displayName: user.displayName,
-        }, {merge: true});
-      }
+      await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+      // Name handling is done in loadTrainingData to avoid race conditions
     } catch(err) {
       if(err.code!=='auth/popup-closed-by-user') showError('auth-error', friendlyError(err.code));
     }
@@ -1091,26 +1091,52 @@
   async function doSignOut() { if(confirm('Sign out?')) await auth.signOut(); }
 
   // Load training data from user's Firestore doc
-  async function loadTrainingData(uid) {
-    try {
-      const doc = await db.collection('users').doc(uid).get();
+  let userDataUnsub = null;
+
+  // Load training data with real-time listener
+  function loadTrainingData(uid) {
+    // Unsubscribe from previous listener if any
+    if (userDataUnsub) { userDataUnsub(); userDataUnsub = null; }
+
+    userDataUnsub = db.collection('users').doc(uid).onSnapshot(doc => {
       if (doc.exists) {
-        trainingData = doc.data();
+        const newData = doc.data();
+        const fieldCount = Object.keys(newData).length;
+        console.log('Loaded user data:', fieldCount, 'fields');
+        console.log('  firstName:', newData.firstName, '| lastName:', newData.lastName);
+
+        trainingData = newData;
         userCert = trainingData.certNumber || '';
-        console.log('Loaded user data:', Object.keys(trainingData).length, 'fields');
+
         renderDashboard(trainingData);
-        populateTrainingForm(trainingData);
-        loadProfileForm(trainingData);
+        // Update nav name from Firestore (not Google auth)
+        const fsName = [trainingData.firstName, trainingData.lastName].filter(Boolean).join(' ');
+        if (fsName) document.getElementById('nav-user-name').textContent = fsName;
+        // Populate forms unless actively being saved by user
+        if (!isSavingTraining) populateTrainingForm(trainingData);
+        if (!isSavingProfile) loadProfileForm(trainingData);
         renderAchievements(trainingData);
       } else {
-        console.log('No user document found — new user');
+        // Document truly doesn't exist — brand new user
+        console.log('No user document found — creating for new user');
         trainingData = {};
         renderAchievements(null);
+        // Set name from Google auth for first-time users only
+        if (currentUser && currentUser.displayName) {
+          const parts = currentUser.displayName.split(' ');
+          const first = parts[0] || '';
+          const last = parts.slice(1).join(' ') || '';
+          console.log('First-time user — setting name from Google:', first, last);
+          db.collection('users').doc(uid).set({
+            firstName: first, lastName: last, displayName: currentUser.displayName,
+            email: currentUser.email || ''
+          });
+        }
       }
-    } catch(e) {
-      console.error('loadTrainingData failed:', e);
+    }, err => {
+      console.error('loadTrainingData listener error:', err);
       showToast('Failed to load your data. Please refresh.');
-    }
+    });
   }
 
   // Render dashboard from training data
@@ -1240,10 +1266,17 @@
   }
 
   async function updateUserRecord(user) {
-    try { await db.collection('users').doc(user.uid).set({
-      email:user.email||'', displayName:user.displayName||user.email.split('@')[0],
-      lastSeen:firebase.firestore.FieldValue.serverTimestamp()
-    },{merge:true}); } catch(e){}
+    try {
+      // Use update() not set() — this only updates existing docs
+      // For new users, the onSnapshot else-branch creates the doc first
+      await db.collection('users').doc(user.uid).update({
+        email: user.email || '',
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch(e) {
+      // If doc doesn't exist yet, that's fine — onSnapshot will create it
+      if (e.code !== 'not-found') console.error('updateUserRecord error:', e);
+    }
   }
 
   function setLoading(prefix, on) {
@@ -1341,9 +1374,19 @@
       if (key === 'soloAge' || key === 'privateAge' || key === 'commercialAge') return;
       const val = d[key];
       if (val !== undefined && val !== null && val !== '') {
-        if (el.type === 'number') el.value = val;
-        else if (el.type === 'date') el.value = convertToDateInput(val);
-        else el.value = val;
+        if (el.tagName === 'SELECT') {
+          // For selects, find matching option
+          const strVal = String(val);
+          for (let i = 0; i < el.options.length; i++) {
+            if (el.options[i].value === strVal) { el.selectedIndex = i; break; }
+          }
+        } else if (el.type === 'number') {
+          el.value = val;
+        } else if (el.type === 'date') {
+          el.value = convertToDateInput(val);
+        } else {
+          el.value = val;
+        }
       }
     });
     // Auto-calculate ages after populating dates
@@ -1367,41 +1410,68 @@
   // ── Training Log: Save form to Firestore ──
   async function saveTrainingLog() {
     if (!currentUser) return;
+    isSavingTraining = true;
     const data = {};
     TRAINING_FIELDS.forEach(key => {
       const el = document.getElementById('t-'+key);
       if (!el) return;
       const val = el.value.trim();
-      if (val !== '') {
-        // For auto-calculated age fields, extract the number
-        if (key === 'soloAge' || key === 'privateAge' || key === 'commercialAge') {
-          const num = parseInt(val);
-          if (!isNaN(num)) data[key] = num;
-        } else if (el.type === 'number') {
-          data[key] = parseFloat(val) || 0;
-        } else {
-          data[key] = val;
-        }
+      // For auto-calculated age fields, extract the number
+      if (key === 'soloAge' || key === 'privateAge' || key === 'commercialAge') {
+        const num = parseInt(val);
+        data[key] = !isNaN(num) ? num : firebase.firestore.FieldValue.delete();
+      } else if (val === '') {
+        // Clear the field in Firestore when user erases it
+        data[key] = firebase.firestore.FieldValue.delete();
+      } else if (el.type === 'number') {
+        data[key] = parseFloat(val) || 0;
+      } else {
+        data[key] = val;
       }
     });
 
     const statusEl = document.getElementById('training-save-status');
     try {
-      await db.collection('users').doc(currentUser.uid).set(data, { merge: true });
-      // Refresh dashboard data
-      trainingData = { ...trainingData, ...data };
-      renderDashboard(trainingData);
+      console.log('Saving training data:', Object.keys(data).length, 'fields');
+      await db.collection('users').doc(currentUser.uid).update(data);
+      // The real-time listener will auto-update trainingData and refresh dashboard
       statusEl.textContent = '✓ Training data saved successfully!';
       statusEl.style.color = 'var(--neon)';
       statusEl.classList.add('show');
       showToast('Training data saved!');
       setTimeout(() => statusEl.classList.remove('show'), 4000);
     } catch(e) {
-      statusEl.textContent = '✕ Failed to save. Please try again.';
-      statusEl.style.color = 'var(--danger)';
-      statusEl.classList.add('show');
-      console.error('saveTrainingLog:', e);
+      // If doc doesn't exist yet, use set instead
+      if (e.code === 'not-found') {
+        const setData = {};
+        TRAINING_FIELDS.forEach(key => {
+          const el = document.getElementById('t-'+key);
+          if (!el) return;
+          const val = el.value.trim();
+          if (val !== '') {
+            if (key === 'soloAge' || key === 'privateAge' || key === 'commercialAge') {
+              const num = parseInt(val);
+              if (!isNaN(num)) setData[key] = num;
+            } else if (el.type === 'number') {
+              setData[key] = parseFloat(val) || 0;
+            } else {
+              setData[key] = val;
+            }
+          }
+        });
+        try {
+          await db.collection('users').doc(currentUser.uid).set(setData, {merge: true});
+          showToast('Training data saved!');
+        } catch(e2) { console.error('saveTrainingLog set fallback:', e2); }
+      } else {
+        statusEl.textContent = '✕ Failed to save. Please try again.';
+        statusEl.style.color = 'var(--danger)';
+        statusEl.classList.add('show');
+        console.error('saveTrainingLog:', e);
+      }
     }
+    // Reset flag after a short delay to let onSnapshot fire
+    setTimeout(() => { isSavingTraining = false; }, 1500);
   }
 
   // ══════════════════════════════════════════════════
@@ -1416,9 +1486,17 @@
       const el = document.getElementById('p-'+key);
       if (!el) return;
       const val = d[key];
-      // Only set if there's actual data — don't overwrite defaults with empty strings
       if (val !== undefined && val !== null && val !== '') {
-        el.value = val;
+        if (el.tagName === 'SELECT') {
+          const strVal = String(val);
+          for (let i = 0; i < el.options.length; i++) {
+            if (el.options[i].value === strVal || el.options[i].textContent === strVal) {
+              el.selectedIndex = i; break;
+            }
+          }
+        } else {
+          el.value = val;
+        }
       }
     });
     if (currentUser) document.getElementById('p-email').value = currentUser.email || '';
@@ -1508,6 +1586,7 @@
 
   async function saveProfile() {
     if (!currentUser) return;
+    isSavingProfile = true;
     const data = {};
     PROFILE_FIELDS.forEach(key => {
       const el = document.getElementById('p-'+key);
@@ -1525,18 +1604,15 @@
 
     if (data.certNumber) userCert = data.certNumber;
 
+    // Sync displayName with firstName + lastName
+    const fullName = [data.firstName, data.lastName].filter(Boolean).join(' ');
+    if (fullName) data.displayName = fullName;
+
     const statusEl = document.getElementById('profile-save-status');
     try {
+      console.log('Saving profile:', Object.keys(data).length, 'fields:', Object.keys(data).filter(k => data[k]).join(', '));
       await db.collection('users').doc(currentUser.uid).set(data, { merge: true });
-
-      // Verify the save by re-reading
-      const verifyDoc = await db.collection('users').doc(currentUser.uid).get();
-      if (verifyDoc.exists) {
-        trainingData = verifyDoc.data();
-        renderDashboard(trainingData);
-        renderAchievements(trainingData);
-        recalcAllAges();
-      }
+      // Real-time listener will auto-update trainingData
 
       statusEl.textContent = '✓ Profile saved successfully!';
       statusEl.style.color = 'var(--neon)';
@@ -1550,9 +1626,8 @@
       showToast('Save failed — check console for details.');
       console.error('saveProfile:', e);
     }
+    setTimeout(() => { isSavingProfile = false; }, 1500);
   }
-
-  // ── Achievements ───────────────────────────────
   const ACHIEVEMENTS = [
     { key: 'soloDate',        label: 'First Solo',    icon: '👤' },
     { key: 'privateDate',     label: 'Private Pilot', icon: '🏅' },
