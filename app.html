@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACE Pilot Training Log</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #070d1b;
+      color: #d0dff5;
+      min-height: 100vh;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* ── Colors ── */
+    :root {
+      --bg:          #070d1b;
+      --surface:     #0c1527;
+      --elevated:    #0f1c30;
+      --floating:    #142640;
+      --border:      rgba(57,255,20,0.12);
+      --border-hi:   rgba(57,255,20,0.28);
+      --neon:        #39ff14;
+      --neon-dim:    #2bcc10;
+      --neon-glow:   rgba(57,255,20,0.25);
+      --neon-subtle: rgba(57,255,20,0.08);
+      --text:        #d0dff5;
+      --text-dim:    #6a7fa0;
+      --text-muted:  #3d5070;
+      --danger:      #f87171;
+      --warn:        #fbbf24;
+
+      /* Neumorphic shadows */
+      --neo-out: 6px 6px 16px #050a14, -6px -6px 16px #0e1a30;
+      --neo-in:  inset 4px 4px 10px #050a14, inset -4px -4px 10px #0e1a30;
+      --neo-btn: 4px 4px 12px #050a14, -4px -4px 12px #0e1a30;
+    }
+
+    h1,h2,h3,h4 { font-family: 'Orbitron', sans-serif; }
+
+    /* ── Top Nav ── */
+    .top-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: 72px;
+      background: rgba(7,13,27,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px; text-decoration: none;
+    }
+    .nav-logo-box {
+      background: white; border-radius: 8px; padding: 6px 14px;
+      display: flex; align-items: center;
+    }
+    .nav-logo-box img { height: 44px; width: auto; }
+    .nav-tabs { display: flex; gap: 4px; }
+    .nav-tab {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 18px; border-radius: 8px;
+      font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      color: var(--text-dim); background: transparent;
+      border: 1px solid transparent; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .nav-tab:hover { color: var(--text); background: var(--neon-subtle); }
+    .nav-tab.active {
+      color: var(--neon); background: rgba(57,255,20,0.1);
+      border-color: var(--border-hi);
+      box-shadow: 0 0 12px var(--neon-glow);
+    }
+    .nav-tab .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--neon); box-shadow: 0 0 6px var(--neon-glow);
+      display: none;
+    }
+    .nav-tab.active .dot { display: block; }
+    .nav-right { display: flex; align-items: center; gap: 14px; }
+    .nav-user { font-size: 13px; font-weight: 500; color: var(--text); }
+    .nav-signout {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text-dim); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .nav-signout:hover { color: var(--danger); border-color: rgba(248,113,113,0.3); }
+
+    /* ── Neo Card ── */
+    .neo-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--neo-out);
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .neo-card:hover { border-color: var(--border-hi); }
+    .neo-card-inner {
+      background: var(--elevated);
+      border-radius: 12px;
+      box-shadow: var(--neo-in);
+    }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 10px;
+      font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: #070d1b; background: var(--neon);
+      border: none; cursor: pointer;
+      box-shadow: 0 4px 20px var(--neon-glow), var(--neo-btn);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(57,255,20,0.4), var(--neo-btn); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; pointer-events: none; }
+
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 8px;
+      font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+      color: var(--text-dim); background: transparent;
+      border: 1px solid var(--border); cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-ghost:hover { color: var(--neon); border-color: var(--border-hi); background: var(--neon-subtle); }
+
+    /* ── Form Inputs ── */
+    .form-input {
+      width: 100%;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--neo-in);
+      color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px;
+      padding: 12px 16px; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input::placeholder { color: var(--text-muted); }
+    .form-input:focus { border-color: var(--neon); box-shadow: var(--neo-in), 0 0 8px var(--neon-glow); }
+    select.form-input { cursor: pointer; }
+    /* Date input calendar icon - neon green */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(70%) sepia(90%) saturate(500%) hue-rotate(75deg) brightness(1.2);
+      cursor: pointer;
+    }
+    input[type="date"] { color-scheme: dark; }
+    .form-label {
+      display: block; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 8px;
+    }
+
+    /* ── Auth Tabs ── */
+    .auth-tab {
+      flex: 1; padding: 12px; font-family: 'Rajdhani', sans-serif;
+      font-size: 15px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      border: none; background: transparent; cursor: pointer;
+      color: var(--text-muted); border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .auth-tab.active { color: var(--neon); border-bottom-color: var(--neon); }
+    .auth-tab:hover:not(.active) { color: var(--text-dim); }
+
+    /* ── Milestone Cards ── */
+    .milestone-card {
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+    .milestone-icon {
+      width: 42px; height: 42px; border-radius: 10px;
+      background: var(--neon-subtle); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px; font-size: 18px;
+      box-shadow: 0 0 12px rgba(57,255,20,0.08);
+    }
+    .milestone-title {
+      font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--text); margin-bottom: 12px;
+    }
+    .milestone-progress {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+    }
+    .progress-track {
+      flex: 1; height: 5px; background: var(--elevated);
+      border-radius: 100px; overflow: hidden;
+      box-shadow: var(--neo-in);
+    }
+    .progress-fill {
+      height: 100%; border-radius: 100px;
+      background: linear-gradient(90deg, var(--neon-dim), var(--neon));
+      box-shadow: 0 0 8px var(--neon-glow);
+      transition: width 0.8s ease;
+    }
+    .progress-pct {
+      font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 700;
+      color: var(--neon); min-width: 32px; text-align: right;
+    }
+    .milestone-stats {
+      display: flex; gap: 14px; font-size: 11px; color: var(--text-dim);
+    }
+    .milestone-stats span { display: flex; align-items: center; gap: 4px; }
+    .stat-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--neon); flex-shrink: 0; }
+    .stat-dot-blue { background: #3b82f6; }
+
+    /* ── Stat Boxes ── */
+    .stat-box {
+      text-align: center;
+      padding: 20px 16px;
+    }
+    .stat-value {
+      font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 700;
+      color: var(--neon); line-height: 1;
+      text-shadow: 0 0 12px var(--neon-glow);
+    }
+    .stat-label {
+      font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--text-dim); margin-top: 8px;
+    }
+
+    /* ── Section Header ── */
+    .section-icon { font-size: 22px; margin-right: 10px; }
+    .section-title {
+      font-size: 26px; font-weight: 700; color: var(--text);
+      letter-spacing: 0.5px;
+    }
+    .section-sub { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+
+    /* ── Alert ── */
+    .alert-error {
+      background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25);
+      border-radius: 8px; color: var(--danger); font-size: 13px;
+      padding: 10px 14px; margin-top: 12px; display: none;
+    }
+
+    /* ── Spinner ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(7,13,27,0.3); border-top-color: #070d1b;
+      border-radius: 50%; animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+
+    /* ── Toast ── */
+    @keyframes toastIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateY(10px); } }
+    .toast {
+      position: fixed; bottom: 28px; right: 28px; z-index: 10000;
+      background: var(--surface); border: 1px solid var(--border-hi);
+      border-radius: 10px; padding: 14px 18px; font-size: 13px; color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 12px var(--neon-glow);
+      display: flex; align-items: center; gap: 10px;
+      pointer-events: none; opacity: 0;
+    }
+    .toast.show { animation: toastIn 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards; opacity: 1; }
+    .toast.hide { animation: toastOut 0.2s ease forwards; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--neon-dim); }
+
+    /* ── Animations ── */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+    .fade-up { animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+    @keyframes glow { 0%,100% { box-shadow: 0 0 8px var(--neon-glow); } 50% { box-shadow: 0 0 20px rgba(57,255,20,0.4); } }
+    .glow-pulse { animation: glow 3s ease-in-out infinite; }
+
+    /* ── Glow Bar ── */
+    .glow-bar {
+      height: 2px; margin: 0 auto; width: 50%;
+      background: linear-gradient(90deg, transparent, var(--neon), transparent);
+      box-shadow: 0 0 12px var(--neon-glow);
+    }
+
+    /* ── Google button ── */
+    .btn-google {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 11px; border-radius: 10px;
+      background: var(--elevated); border: 1px solid var(--border);
+      box-shadow: var(--neo-out);
+      color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer;
+      font-family: 'Inter', sans-serif; transition: all 0.2s;
+    }
+    .btn-google:hover { border-color: var(--border-hi); background: var(--floating); transform: translateY(-1px); }
+
+    /* ── Table ── */
+    .log-table { width: 100%; border-collapse: collapse; }
+    .log-table th {
+      font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim);
+      text-align: left; padding: 12px 16px;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .log-table td {
+      font-size: 13px; color: var(--text-dim); padding: 14px 16px;
+      border-bottom: 1px solid rgba(57,255,20,0.06); white-space: nowrap;
+    }
+    .log-table tr:last-child td { border-bottom: none; }
+    .log-table tbody tr:hover { background: var(--neon-subtle); }
+    .td-hi { color: var(--text); font-weight: 500; }
+
+    .badge {
+      display: inline-block; font-size: 10px; font-weight: 600;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    .badge-green { background: rgba(57,255,20,0.1); border: 1px solid rgba(57,255,20,0.25); color: var(--neon); }
+    .badge-blue { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); color: #60a5fa; }
+    .badge-purple { background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25); color: #a78bfa; }
+    .badge-pending { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.25); color: #fbbf24; }
+
+    .btn-del {
+      width: 28px; height: 28px; border-radius: 6px; border: none;
+      background: transparent; color: var(--text-muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-del:hover { background: rgba(248,113,113,0.1); color: var(--danger); }
+
+    .check-group { display: flex; gap: 14px; flex-wrap: wrap; padding-top: 4px; }
+    .check-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-dim); cursor: pointer; }
+    .check-label input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--neon); cursor: pointer; }
+
+    /* ── Form Sections (Training Log) ── */
+    .form-section { margin-bottom: 18px; }
+    .form-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 22px; cursor: pointer; user-select: none;
+    }
+    .form-section-header h3 {
+      font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase; color: var(--text);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .form-section-header h3 .sec-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--neon);
+      box-shadow: 0 0 6px var(--neon-glow); flex-shrink: 0;
+    }
+    .form-section-toggle {
+      color: var(--text-dim); font-size: 14px;
+      transition: transform 0.3s ease;
+    }
+    .form-section-toggle.collapsed { transform: rotate(-90deg); }
+    .form-section-body {
+      padding: 0 22px 22px;
+      display: block;
+    }
+    .form-section-body.hidden { display: none; }
+    .form-row {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 14px; margin-bottom: 14px;
+    }
+    .form-row-2 { grid-template-columns: 1fr 1fr; }
+    .form-field label.form-label { margin-bottom: 6px; }
+    .form-actions {
+      display: flex; justify-content: center; padding: 20px 0;
+    }
+    .save-status {
+      text-align: center; margin-top: 12px; font-size: 13px;
+      color: var(--neon); display: none;
+    }
+    .save-status.show { display: block; }
+
+    /* ── Achievement Badges ── */
+    .achieve-badge {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 18px 10px; border-radius: 12px;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      box-shadow: var(--neo-in);
+      transition: all 0.3s ease;
+      text-align: center; gap: 8px;
+    }
+    .achieve-badge.earned {
+      border-color: var(--border-hi);
+      box-shadow: var(--neo-in), 0 0 12px rgba(57,255,20,0.1);
+    }
+    .achieve-badge .achieve-icon {
+      font-size: 24px; opacity: 0.3;
+      transition: opacity 0.3s;
+    }
+    .achieve-badge.earned .achieve-icon { opacity: 1; }
+    .achieve-badge .achieve-label {
+      font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: var(--text-muted);
+      transition: color 0.3s;
+    }
+    .achieve-badge.earned .achieve-label { color: var(--neon); }
+    .achieve-badge .achieve-check {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--neon); color: var(--bg);
+      display: none; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 900;
+      box-shadow: 0 0 8px var(--neon-glow);
+    }
+    .achieve-badge.earned .achieve-check { display: flex; }
+
+    /* ── Milestone Runway ── */
+    .runway-container {
+      position: relative;
+      padding: 60px 20px 110px;
+    }
+    .runway-track {
+      position: relative;
+      height: 6px;
+      background: var(--elevated);
+      border-radius: 100px;
+      box-shadow: var(--neo-in);
+      margin: 0 20px;
+    }
+    .runway-fill {
+      position: absolute;
+      top: 0; left: 0; height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--neon-dim), var(--neon));
+      box-shadow: 0 0 14px var(--neon-glow);
+      transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .runway-markers {
+      position: absolute;
+      top: 34px; left: 20px; right: 20px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .runway-marker {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform: translateX(-50%);
+    }
+    .runway-marker:first-child { transform: translateX(0); }
+    .runway-marker:last-child { transform: translateX(0); }
+    .marker-dot {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--elevated);
+      border: 2px solid var(--text-muted);
+      box-shadow: var(--neo-out);
+      position: relative;
+      top: 0;
+      z-index: 2;
+      transition: all 0.5s ease;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: transparent;
+    }
+    .marker-dot.reached {
+      background: var(--neon);
+      border-color: var(--neon);
+      box-shadow: 0 0 14px var(--neon-glow), var(--neo-out);
+      color: var(--bg);
+      font-weight: 900;
+    }
+    .marker-dot.next {
+      border-color: var(--neon-dim);
+      animation: pulseMarker 2s ease-in-out infinite;
+    }
+    @keyframes pulseMarker {
+      0%, 100% { box-shadow: var(--neo-out); }
+      50% { box-shadow: 0 0 12px var(--neon-glow), var(--neo-out); border-color: var(--neon); }
+    }
+    .marker-label {
+      position: absolute;
+      top: 32px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      white-space: nowrap;
+      transition: color 0.5s;
+    }
+    .marker-label.reached { color: var(--neon); }
+    .marker-label.next { color: var(--text-dim); }
+    .marker-date {
+      position: absolute;
+      top: 50px;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    /* Airplane */
+    .runway-plane {
+      position: absolute;
+      bottom: 8px;
+      font-size: 60px;
+      z-index: 10;
+      filter: drop-shadow(0 0 10px var(--neon-glow));
+      transition: left 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+      transform: translateX(-50%);
+      line-height: 1;
+    }
+    @keyframes planeBob {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-4px); }
+    }
+    .runway-plane.animate { animation: planeBob 2s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+
+<!-- ═══ AUTH VIEW ═══ -->
+<div id="v-auth" style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; position:relative;">
+  <div style="position:fixed; inset:0; pointer-events:none;">
+    <div style="position:absolute; top:10%; left:-5%; width:50%; height:50%; background:radial-gradient(ellipse,rgba(57,255,20,0.06) 0%,transparent 70%); border-radius:50%;"></div>
+    <div style="position:absolute; bottom:10%; right:5%; width:40%; height:40%; background:radial-gradient(ellipse,rgba(57,255,20,0.04) 0%,transparent 70%); border-radius:50%;"></div>
+  </div>
+  <div style="width:100%; max-width:420px; position:relative;">
+    <div style="text-align:center; margin-bottom:28px;">
+      <div style="width:80px; height:80px; border-radius:50%; margin:0 auto 18px; background:var(--surface); border:2px solid var(--border-hi); display:flex; align-items:center; justify-content:center; font-size:2rem; box-shadow:var(--neo-out);" class="glow-pulse">✈️</div>
+      <h1 style="font-size:1.8rem; font-weight:800; color:var(--neon); text-shadow:0 0 20px var(--neon-glow); letter-spacing:3px;">ACE PILOT</h1>
+      <p style="font-family:'Rajdhani',sans-serif; font-size:12px; color:var(--text-dim); letter-spacing:3px; text-transform:uppercase; margin-top:4px;">Training Log</p>
+    </div>
+    <div class="neo-card" style="padding:32px;">
+      <div style="display:flex; border-bottom:1px solid var(--border); margin-bottom:24px;">
+        <button class="auth-tab active" id="tab-signin" onclick="switchAuthTab('signin')">Sign In</button>
+        <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Create Account</button>
+      </div>
+      <form id="auth-form" onsubmit="handleEmailAuth(event)">
+        <div id="field-name" style="display:none; margin-bottom:16px;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div><label class="form-label">First Name</label><input id="inp-first" type="text" class="form-input" placeholder="Jane"></div>
+            <div><label class="form-label">Last Name</label><input id="inp-last" type="text" class="form-input" placeholder="Smith"></div>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label class="form-label">Email</label>
+          <input id="inp-email" type="email" class="form-input" placeholder="pilot@example.com" required>
+        </div>
+        <div style="margin-bottom:24px;">
+          <label class="form-label">Password</label>
+          <input id="inp-password" type="password" class="form-input" placeholder="••••••••" required minlength="6">
+        </div>
+        <button type="submit" class="btn-primary" id="auth-submit" style="width:100%; justify-content:center;">
+          <span id="auth-btn-text">SIGN IN</span>
+          <span id="auth-btn-spin" style="display:none;"><div class="spinner"></div></span>
+        </button>
+        <div class="alert-error" id="auth-error"></div>
+      </form>
+      <div style="display:flex; align-items:center; gap:12px; margin:20px 0;">
+        <div style="flex:1; height:1px; background:var(--border);"></div>
+        <span style="font-size:11px; color:var(--text-muted); font-weight:600; letter-spacing:1px;">OR</span>
+        <div style="flex:1; height:1px; background:var(--border);"></div>
+      </div>
+      <button class="btn-google" onclick="handleGoogleSignIn()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66 2.84-.81-.62-.19-.06z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+    </div>
+    <p style="text-align:center; margin-top:16px; font-size:12px; color:var(--text-muted);">
+      <a href="index.html" style="color:var(--neon-dim); text-decoration:none;">← Back to homepage</a>
+    </p>
+  </div>
+</div>
+
+<!-- ═══ APP VIEW ═══ -->
+<div id="v-app" style="display:none;">
+
+  <!-- Top Nav -->
+  <nav class="top-nav">
+    <a href="index.html" class="nav-logo">
+      <div class="nav-logo-box"><img src="brand_assets/ACE Logo.jpeg" alt="ACE"></div>
+    </a>
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tab-dashboard" onclick="showSection('dashboard')"><span class="dot"></span> Dashboard</button>
+      <button class="nav-tab" id="tab-training" onclick="showSection('training')"><span class="dot"></span> Training Log</button>
+      <button class="nav-tab" id="tab-profile" onclick="showSection('profile')"><span class="dot"></span> Profile</button>
+    </div>
+    <div class="nav-right">
+      <span class="nav-user" id="nav-user-name"></span>
+      <button class="nav-signout" onclick="doSignOut()" title="Sign out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </nav>
+  <div class="glow-bar"></div>
+
+  <!-- Main -->
+  <main style="max-width:1100px; margin:0 auto; padding:96px 28px 60px;">
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <section id="sec-dashboard">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;">
+        <div>
+          <div style="display:flex; align-items:center;"><span class="section-icon">📈</span><h2 class="section-title">Training Progress</h2></div>
+          <p class="section-sub">Your journey from student to certified pilot</p>
+        </div>
+        <!-- Circle Cards -->
+        <div style="display:flex; gap:20px; flex-shrink:0;">
+          <!-- Percentage Circle -->
+          <div style="position:relative;">
+            <svg width="90" height="90" viewBox="0 0 90 90" style="filter:drop-shadow(0 0 8px var(--neon-glow));">
+              <circle cx="45" cy="45" r="38" fill="none" stroke="var(--elevated)" stroke-width="6" />
+              <circle cx="45" cy="45" r="38" fill="none" stroke="var(--neon)" stroke-width="6"
+                stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round"
+                transform="rotate(-90 45 45)"
+                id="pct-circle-ring" style="transition:stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1);" />
+            </svg>
+            <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+              <div id="pct-circle-val" style="font-family:'Orbitron',sans-serif; font-size:20px; font-weight:800; color:var(--neon); line-height:1; text-shadow:0 0 12px var(--neon-glow);">0%</div>
+              <div style="font-family:'Rajdhani',sans-serif; font-size:11px; font-weight:700; color:var(--neon); letter-spacing:1.5px; text-transform:uppercase; margin-top:3px;">Complete</div>
+            </div>
+          </div>
+          <!-- Total Hours Circle -->
+          <div style="position:relative;">
+            <svg width="90" height="90" viewBox="0 0 90 90" style="filter:drop-shadow(0 0 8px rgba(59,130,246,0.25));">
+              <circle cx="45" cy="45" r="38" fill="none" stroke="var(--elevated)" stroke-width="6" />
+              <circle cx="45" cy="45" r="38" fill="none" stroke="#3b82f6" stroke-width="6"
+                stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round"
+                transform="rotate(-90 45 45)"
+                id="hrs-circle-ring" style="transition:stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1);" />
+            </svg>
+            <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+              <div id="hrs-circle-val" style="font-family:'Orbitron',sans-serif; font-size:18px; font-weight:800; color:var(--neon); line-height:1; text-shadow:0 0 12px var(--neon-glow);">0</div>
+              <div style="font-family:'Rajdhani',sans-serif; font-size:11px; font-weight:700; color:var(--neon); letter-spacing:1.5px; text-transform:uppercase; margin-top:3px;">Hours</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Milestone Runway -->
+      <div class="neo-card" style="padding:24px 28px 28px; margin-bottom:24px;">
+        <div style="text-align:center; margin-bottom:10px;">
+          <div style="font-family:'Orbitron',sans-serif; font-size:16px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text);">Flight Training Journey</div>
+        </div>
+        <div class="runway-container">
+          <div class="runway-track">
+            <div class="runway-fill" id="runway-fill" style="width:0%;"></div>
+          </div>
+          <div class="runway-plane animate" id="runway-plane" style="left:0%;">🛬</div>
+          <div class="runway-markers" id="runway-markers"></div>
+        </div>
+      </div>
+
+      <!-- Milestone Cards -->
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:28px;">
+        <div class="neo-card milestone-card">
+          <div class="milestone-icon">🔄</div>
+          <div class="milestone-title">Transfer Status</div>
+          <div class="milestone-progress"><div class="progress-track"><div class="progress-fill" id="ms-transfer-fill" style="width:0%;"></div></div><div class="progress-pct" id="ms-transfer-pct">0%</div></div>
+          <div class="milestone-stats"><span><span class="stat-dot"></span> <span id="ms-transfer-hrs">--</span> hrs</span><span><span class="stat-dot-blue stat-dot"></span> <span id="ms-transfer-ldg">--</span> ldg</span></div>
+        </div>
+        <div class="neo-card milestone-card">
+          <div class="milestone-icon">👤</div>
+          <div class="milestone-title">First Solo</div>
+          <div class="milestone-progress"><div class="progress-track"><div class="progress-fill" id="ms-solo-fill" style="width:0%;"></div></div><div class="progress-pct" id="ms-solo-pct">0%</div></div>
+          <div class="milestone-stats"><span><span class="stat-dot-blue stat-dot"></span> <span id="ms-solo-date">--</span></span><span><span class="stat-dot"></span> <span id="ms-solo-hrs">--</span> hrs</span></div>
+        </div>
+        <div class="neo-card milestone-card">
+          <div class="milestone-icon">🏅</div>
+          <div class="milestone-title">Private Pilot</div>
+          <div class="milestone-progress"><div class="progress-track"><div class="progress-fill" id="ms-private-fill" style="width:0%;"></div></div><div class="progress-pct" id="ms-private-pct">0%</div></div>
+          <div class="milestone-stats"><span><span class="stat-dot-blue stat-dot"></span> <span id="ms-private-date">--</span></span><span><span class="stat-dot"></span> <span id="ms-private-hrs">--</span> hrs</span></div>
+        </div>
+        <div class="neo-card milestone-card">
+          <div class="milestone-icon">🌤️</div>
+          <div class="milestone-title">Instrument Rating</div>
+          <div class="milestone-progress"><div class="progress-track"><div class="progress-fill" id="ms-instrument-fill" style="width:0%;"></div></div><div class="progress-pct" id="ms-instrument-pct">0%</div></div>
+          <div class="milestone-stats"><span><span class="stat-dot-blue stat-dot"></span> <span id="ms-instrument-date">--</span></span><span><span class="stat-dot"></span> <span id="ms-instrument-hrs">--</span> hrs</span></div>
+        </div>
+        <div class="neo-card milestone-card">
+          <div class="milestone-icon">✈️</div>
+          <div class="milestone-title">Commercial Pilot</div>
+          <div class="milestone-progress"><div class="progress-track"><div class="progress-fill" id="ms-commercial-fill" style="width:0%;"></div></div><div class="progress-pct" id="ms-commercial-pct">0%</div></div>
+          <div class="milestone-stats"><span><span class="stat-dot-blue stat-dot"></span> <span id="ms-commercial-date">--</span></span><span><span class="stat-dot"></span> <span id="ms-commercial-hrs">--</span> hrs</span></div>
+        </div>
+        <div class="neo-card milestone-card">
+          <div class="milestone-icon">🎓</div>
+          <div class="milestone-title">CFI Rating</div>
+          <div class="milestone-progress"><div class="progress-track"><div class="progress-fill" id="ms-cfi-fill" style="width:0%;"></div></div><div class="progress-pct" id="ms-cfi-pct">0%</div></div>
+          <div class="milestone-stats"><span><span class="stat-dot-blue stat-dot"></span> <span id="ms-cfi-date">--</span></span><span><span class="stat-dot"></span> <span id="ms-cfi-hrs">--</span> hrs</span></div>
+        </div>
+      </div>
+
+      <!-- Flight Hours Summary -->
+      <div class="neo-card" style="padding:24px 28px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:20px;">
+          <span style="font-size:16px;">⏱️</span>
+          <span style="font-family:'Rajdhani',sans-serif; font-size:13px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim);">Flight Hours Summary</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+          <div class="neo-card-inner stat-box"><div class="stat-value" id="stat-total-hrs">0.0</div><div class="stat-label">Total Hours</div></div>
+          <div class="neo-card-inner stat-box"><div class="stat-value" id="stat-total-ldg">0</div><div class="stat-label">Total Landings</div></div>
+          <div class="neo-card-inner stat-box"><div class="stat-value" id="stat-certs">0</div><div class="stat-label">Certificates</div></div>
+          <div class="neo-card-inner stat-box"><div class="stat-value" id="stat-ratings">0</div><div class="stat-label">Ratings</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ TRAINING LOG ═══ -->
+    <section id="sec-training" style="display:none;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;">
+        <div>
+          <div style="display:flex; align-items:center;"><span class="section-icon">📋</span><h2 class="section-title">Training Log</h2></div>
+          <p class="section-sub">Record and track your pilot training milestones</p>
+        </div>
+        <button class="btn-primary" onclick="saveTrainingLog()">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 2h7l3 3v7H2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 2v3h4M4 8h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Save Training Data
+        </button>
+      </div>
+
+      <div id="training-save-status" class="save-status"></div>
+
+      <!-- Transfer Student -->
+      <div class="neo-card form-section">
+        <div class="form-section-header" onclick="toggleFormSection('sec-transfer')">
+          <h3><span class="sec-dot"></span> Transfer Student Information</h3>
+          <span class="form-section-toggle" id="tog-sec-transfer">▼</span>
+        </div>
+        <div class="form-section-body" id="sec-transfer">
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">Transfer Student</label><select id="t-transferStudent" class="form-input"><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+            <div class="form-field"><label class="form-label">Transfer Hours</label><input id="t-transferHours" type="number" class="form-input" step="0.1" placeholder="0.0"></div>
+            <div class="form-field"><label class="form-label">Transfer Landings</label><input id="t-transferLandings" type="number" class="form-input" placeholder="0"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- First Solo Flight -->
+      <div class="neo-card form-section">
+        <div class="form-section-header" onclick="toggleFormSection('sec-solo')">
+          <h3><span class="sec-dot"></span> First Solo Flight</h3>
+          <span class="form-section-toggle" id="tog-sec-solo">▼</span>
+        </div>
+        <div class="form-section-body" id="sec-solo">
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">Solo Date</label><input id="t-soloDate" type="date" class="form-input" onchange="calcAgeAtDate('solo')"></div>
+            <div class="form-field"><label class="form-label">Age at Solo</label><input id="t-soloAge" type="text" class="form-input" placeholder="Auto-calculated" readonly style="color:var(--text-dim); cursor:default;"></div>
+            <div class="form-field"><label class="form-label">Solo Hours</label><input id="t-soloHours" type="number" class="form-input" step="0.1" placeholder="0.0"></div>
+          </div>
+          <div class="form-row form-row-2">
+            <div class="form-field"><label class="form-label">Solo Landings</label><input id="t-soloLandings" type="number" class="form-input" placeholder="0"></div>
+            <div class="form-field"><label class="form-label">Solo Airplane (Tail #)</label><input id="t-soloAirplane" type="text" class="form-input" placeholder="e.g. N15RA" style="text-transform:uppercase;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Private Pilot License -->
+      <div class="neo-card form-section">
+        <div class="form-section-header" onclick="toggleFormSection('sec-private')">
+          <h3><span class="sec-dot"></span> Private Pilot License (PPL)</h3>
+          <span class="form-section-toggle" id="tog-sec-private">▼</span>
+        </div>
+        <div class="form-section-body" id="sec-private">
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">Private Pilot Date</label><input id="t-privateDate" type="date" class="form-input" onchange="calcAgeAtDate('private')"></div>
+            <div class="form-field"><label class="form-label">Age at Private</label><input id="t-privateAge" type="text" class="form-input" placeholder="Auto-calculated" readonly style="color:var(--text-dim); cursor:default;"></div>
+            <div class="form-field"><label class="form-label">Private Hours</label><input id="t-privateHours" type="number" class="form-input" step="0.1" placeholder="0.0"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">Private Landings</label><input id="t-privateLandings" type="number" class="form-input" placeholder="0"></div>
+            <div class="form-field"><label class="form-label">Private Airplane (Tail #)</label><input id="t-privateAirplane" type="text" class="form-input" placeholder="e.g. N15RA" style="text-transform:uppercase;"></div>
+            <div class="form-field"><label class="form-label">Written Exam</label><select id="t-privateWrittenExam" class="form-input"><option value="">Select</option><option value="Pass">Pass</option><option value="Retake">Retake</option><option value="Pending">Pending</option></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">Checkride Attempts</label><input id="t-privateCheckrideAttempts" type="number" class="form-input" placeholder="1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instrument Rating -->
+      <div class="neo-card form-section">
+        <div class="form-section-header" onclick="toggleFormSection('sec-instrument')">
+          <h3><span class="sec-dot"></span> Instrument Rating</h3>
+          <span class="form-section-toggle" id="tog-sec-instrument">▼</span>
+        </div>
+        <div class="form-section-body" id="sec-instrument">
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">Instrument Rating</label><select id="t-instrumentRating" class="form-input"><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option><option value="In Progress">In Progress</option></select></div>
+            <div class="form-field"><label class="form-label">Instrument Date</label><input id="t-instrumentDate" type="date" class="form-input"></div>
+            <div class="form-field"><label class="form-label">Instrument Hours</label><input id="t-instrumentHours" type="number" class="form-input" step="0.1" placeholder="0.0"></div>
+          </div>
+          <div class="form-row form-row-2">
+            <div class="form-field"><label class="form-label">Instrument Airplane (Tail #)</label><input id="t-instrumentAirplane" type="text" class="form-input" placeholder="e.g. N43700" style="text-transform:uppercase;"></div>
+            <div class="form-field"><label class="form-label">Instrument Written Exam</label><select id="t-instrumentWrittenExam" class="form-input"><option value="">Select</option><option value="Pass">Pass</option><option value="Retake">Retake</option><option value="Pending">Pending</option></select></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Commercial Pilot -->
+      <div class="neo-card form-section">
+        <div class="form-section-header" onclick="toggleFormSection('sec-commercial')">
+          <h3><span class="sec-dot"></span> Commercial Pilot License (CPL)</h3>
+          <span class="form-section-toggle" id="tog-sec-commercial">▼</span>
+        </div>
+        <div class="form-section-body" id="sec-commercial">
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">Commercial Date</label><input id="t-commercialDate" type="date" class="form-input" onchange="calcAgeAtDate('commercial')"></div>
+            <div class="form-field"><label class="form-label">Age at Commercial</label><input id="t-commercialAge" type="text" class="form-input" placeholder="Auto-calculated" readonly style="color:var(--text-dim); cursor:default;"></div>
+            <div class="form-field"><label class="form-label">Commercial Hours</label><input id="t-commercialHours" type="number" class="form-input" step="0.1" placeholder="0.0"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">Commercial Airplane (Tail #)</label><input id="t-commercialAirplane" type="text" class="form-input" placeholder="e.g. N43700" style="text-transform:uppercase;"></div>
+            <div class="form-field"><label class="form-label">Commercial Written Exam</label><select id="t-commercialWrittenExam" class="form-input"><option value="">Select</option><option value="Pass">Pass</option><option value="Retake">Retake</option><option value="Pending">Pending</option></select></div>
+            <div class="form-field"><label class="form-label">Checkride Attempts</label><input id="t-commercialCheckrideAttempts" type="number" class="form-input" placeholder="1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multi-Engine Rating -->
+      <div class="neo-card form-section">
+        <div class="form-section-header" onclick="toggleFormSection('sec-multi')">
+          <h3><span class="sec-dot"></span> Multi-Engine Rating</h3>
+          <span class="form-section-toggle" id="tog-sec-multi">▼</span>
+        </div>
+        <div class="form-section-body" id="sec-multi">
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">Multi-Engine Rating</label><select id="t-multiEngineRating" class="form-input"><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option><option value="In Progress">In Progress</option></select></div>
+            <div class="form-field"><label class="form-label">Multi-Engine Date</label><input id="t-multiEngineDate" type="date" class="form-input"></div>
+            <div class="form-field"><label class="form-label">Multi-Engine Hours</label><input id="t-multiEngineHours" type="number" class="form-input" step="0.1" placeholder="0.0"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">Multi-Engine Airplane (Tail #)</label><input id="t-multiEngineAirplane" type="text" class="form-input" placeholder="e.g. N12345" style="text-transform:uppercase;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Certified Flight Instructor -->
+      <div class="neo-card form-section">
+        <div class="form-section-header" onclick="toggleFormSection('sec-cfi')">
+          <h3><span class="sec-dot"></span> Certified Flight Instructor (CFI)</h3>
+          <span class="form-section-toggle" id="tog-sec-cfi">▼</span>
+        </div>
+        <div class="form-section-body" id="sec-cfi">
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">CFI Certificate</label><select id="t-cfiCertificate" class="form-input"><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option><option value="In Progress">In Progress</option></select></div>
+            <div class="form-field"><label class="form-label">CFI Date</label><input id="t-cfiDate" type="date" class="form-input"></div>
+            <div class="form-field"><label class="form-label">CFI Hours</label><input id="t-cfiHours" type="number" class="form-input" step="0.1" placeholder="0.0"></div>
+          </div>
+          <div class="form-row form-row-2">
+            <div class="form-field"><label class="form-label">CFII (Instrument Instructor)</label><select id="t-cfiiCertificate" class="form-input"><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option><option value="In Progress">In Progress</option></select></div>
+            <div class="form-field"><label class="form-label">MEI (Multi-Engine Instructor)</label><select id="t-meiCertificate" class="form-input"><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option><option value="In Progress">In Progress</option></select></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Education & Career -->
+      <div class="neo-card form-section">
+        <div class="form-section-header" onclick="toggleFormSection('sec-education')">
+          <h3><span class="sec-dot"></span> Education & Career</h3>
+          <span class="form-section-toggle" id="tog-sec-education">▼</span>
+        </div>
+        <div class="form-section-body" id="sec-education">
+          <div class="form-row form-row-2">
+            <div class="form-field"><label class="form-label">College Attended</label><input id="t-collegeAttended" type="text" class="form-input" placeholder="University name"></div>
+            <div class="form-field"><label class="form-label">Major / Degree</label><input id="t-major" type="text" class="form-input" placeholder="e.g. Aviation Science"></div>
+          </div>
+          <div class="form-row form-row-2">
+            <div class="form-field"><label class="form-label">First Airline Job</label><input id="t-firstAirlineJob" type="text" class="form-input" placeholder="Airline name"></div>
+            <div class="form-field"><label class="form-label">Additional Ratings</label><input id="t-additionalRatings" type="text" class="form-input" placeholder="e.g. ATP, SES, etc."></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Save -->
+      <div class="form-actions">
+        <button class="btn-primary" onclick="saveTrainingLog()">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 2h7l3 3v7H2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 2v3h4M4 8h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Save Training Data
+        </button>
+      </div>
+    </section>
+
+    <!-- ═══ PROFILE ═══ -->
+    <section id="sec-profile" style="display:none;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;">
+        <div>
+          <div style="display:flex; align-items:center;"><span class="section-icon">👤</span><h2 class="section-title">Pilot Profile</h2></div>
+          <p class="section-sub">Your personal information and account details</p>
+        </div>
+        <button class="btn-primary" onclick="saveProfile()">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 2h7l3 3v7H2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 2v3h4M4 8h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Save Profile
+        </button>
+      </div>
+
+      <!-- Profile Header Card -->
+      <div class="neo-card" style="padding:32px; margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:22px; padding-bottom:28px; margin-bottom:28px; border-bottom:1px solid var(--border);">
+          <!-- Photo / Avatar -->
+          <div style="position:relative; flex-shrink:0;">
+            <div id="prof-avatar" style="width:90px; height:90px; border-radius:50%; background:linear-gradient(135deg, var(--neon-dim), var(--neon)); display:flex; align-items:center; justify-content:center; font-family:'Orbitron',sans-serif; font-size:30px; font-weight:800; color:var(--bg); box-shadow:0 4px 20px var(--neon-glow), 0 0 0 3px rgba(57,255,20,0.15); overflow:hidden;">—</div>
+            <img id="prof-photo-img" src="" alt="" style="display:none; width:90px; height:90px; border-radius:50%; object-fit:cover; position:absolute; top:0; left:0; box-shadow:0 4px 20px var(--neon-glow), 0 0 0 3px rgba(57,255,20,0.15);">
+            <label for="photo-upload" style="position:absolute; bottom:-2px; right:-2px; width:28px; height:28px; border-radius:50%; background:var(--neon); color:var(--bg); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; font-weight:900; box-shadow:0 2px 8px var(--neon-glow); border:2px solid var(--bg); transition:transform 0.2s;" title="Upload photo">📷</label>
+            <input type="file" id="photo-upload" accept="image/*" style="display:none;" onchange="handlePhotoUpload(event)">
+          </div>
+          <div>
+            <div id="prof-display-name" style="font-family:'Orbitron',sans-serif; font-size:22px; font-weight:700; color:var(--text); letter-spacing:0.5px;">Your Name</div>
+            <div style="font-size:12px; color:var(--text-dim); margin-top:4px;">Certificate #: <span id="prof-cert-display" style="color:var(--neon); font-weight:600;">--</span></div>
+            <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">Gender: <span id="prof-gender-display" style="color:var(--neon); font-weight:600;">--</span></div>
+            <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">Member since: <span id="prof-member-since" style="color:var(--neon); font-weight:600;">--</span></div>
+          </div>
+        </div>
+
+        <!-- Personal Information -->
+        <div style="font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+          <span style="width:8px; height:8px; border-radius:50%; background:var(--neon); box-shadow:0 0 6px var(--neon-glow);"></span> Personal Information
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px 20px;">
+          <div><label class="form-label">First Name</label><input id="p-firstName" type="text" class="form-input" placeholder="Jane" oninput="updateProfilePreview()"></div>
+          <div><label class="form-label">Last Name</label><input id="p-lastName" type="text" class="form-input" placeholder="Smith" oninput="updateProfilePreview()"></div>
+          <div><label class="form-label">Email</label><input id="p-email" type="email" class="form-input" readonly style="color:var(--text-dim); cursor:default;"></div>
+          <div><label class="form-label">Phone Number</label><input id="p-phone" type="tel" class="form-input" placeholder="(555) 123-4567" oninput="formatPhoneField(this)" maxlength="14"></div>
+          <div><label class="form-label">Date of Birth</label><input id="p-birthdate" type="date" class="form-input" onchange="updateProfileAge(); recalcAllAges()"></div>
+          <div><label class="form-label">Age</label><input id="p-age" type="text" class="form-input" placeholder="Auto-calculated" readonly style="color:var(--text-dim); cursor:default;"></div>
+          <div><label class="form-label">Gender</label><select id="p-gender" class="form-input" onchange="updateProfilePreview()"><option value="">Select…</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select></div>
+          <div><label class="form-label">Certificate # (Last 5 digits)</label><input id="p-certNumber" type="text" class="form-input" placeholder="23456" maxlength="5" pattern="\d{5}" oninput="updateProfilePreview()"></div>
+        </div>
+
+        <!-- Address -->
+        <div style="font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin:28px 0 16px; display:flex; align-items:center; gap:8px;">
+          <span style="width:8px; height:8px; border-radius:50%; background:var(--neon); box-shadow:0 0 6px var(--neon-glow);"></span> Address
+        </div>
+        <div style="margin-bottom:14px;"><label class="form-label">Street Address</label><input id="p-address" type="text" class="form-input" placeholder="123 Main Street"></div>
+        <div style="margin-bottom:14px;"><label class="form-label">Address Line 2</label><input id="p-address2" type="text" class="form-input" placeholder="Apt, Suite, Unit (optional)"></div>
+        <div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:16px 20px;">
+          <div><label class="form-label">City</label><input id="p-city" type="text" class="form-input" placeholder="Atlanta"></div>
+          <div><label class="form-label">State</label><select id="p-state" class="form-input">
+            <option value="">Select…</option><option>AL</option><option>AK</option><option>AZ</option><option>AR</option><option>CA</option><option>CO</option><option>CT</option><option>DE</option><option>FL</option><option selected>GA</option><option>HI</option><option>ID</option><option>IL</option><option>IN</option><option>IA</option><option>KS</option><option>KY</option><option>LA</option><option>ME</option><option>MD</option><option>MA</option><option>MI</option><option>MN</option><option>MS</option><option>MO</option><option>MT</option><option>NE</option><option>NV</option><option>NH</option><option>NJ</option><option>NM</option><option>NY</option><option>NC</option><option>ND</option><option>OH</option><option>OK</option><option>OR</option><option>PA</option><option>RI</option><option>SC</option><option>SD</option><option>TN</option><option>TX</option><option>UT</option><option>VT</option><option>VA</option><option>WA</option><option>WV</option><option>WI</option><option>WY</option><option>DC</option>
+          </select></div>
+          <div><label class="form-label">ZIP Code</label><input id="p-zip" type="text" class="form-input" placeholder="30301" maxlength="10"></div>
+        </div>
+
+        <!-- Emergency Contact -->
+        <div style="font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin:28px 0 16px; display:flex; align-items:center; gap:8px;">
+          <span style="width:8px; height:8px; border-radius:50%; background:var(--neon); box-shadow:0 0 6px var(--neon-glow);"></span> Emergency Contact
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px 20px;">
+          <div><label class="form-label">Contact Name</label><input id="p-emergencyName" type="text" class="form-input" placeholder="Parent / Guardian"></div>
+          <div><label class="form-label">Relationship</label><input id="p-emergencyRelation" type="text" class="form-input" placeholder="e.g. Mother, Father"></div>
+          <div><label class="form-label">Contact Phone</label><input id="p-emergencyPhone" type="tel" class="form-input" placeholder="(555) 123-4567" oninput="formatPhoneField(this)" maxlength="14"></div>
+        </div>
+
+        <div id="profile-save-status" style="text-align:center; margin-top:20px; font-size:13px; display:none;"></div>
+      </div>
+
+      <!-- Achievements -->
+      <div class="neo-card" style="padding:28px; margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:22px;">
+          <span style="font-size:16px;">🏆</span>
+          <span style="font-family:'Rajdhani',sans-serif; font-size:13px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim);">Achievements</span>
+        </div>
+        <div id="achievements-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;"></div>
+      </div>
+
+      <!-- Sign Out -->
+      <div style="text-align:center; padding:20px 0;">
+        <button onclick="doSignOut()" style="display:inline-flex; align-items:center; gap:8px; padding:14px 36px; border-radius:10px; font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:white; background:linear-gradient(135deg,#dc2626,#b91c1c); border:none; cursor:pointer; box-shadow:0 4px 16px rgba(220,38,38,0.3), var(--neo-btn); transition:transform 0.2s, box-shadow 0.2s;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          SIGN OUT
+        </button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<!-- ═══ JAVASCRIPT ═══ -->
+<script>
+  const firebaseConfig = {
+    apiKey:"AIzaSyDm0XMRFwecpZffubUPHrWZqbttHuQi2hY",
+    authDomain:"flyace-pilot-training-log.firebaseapp.com",
+    projectId:"flyace-pilot-training-log",
+    storageBucket:"flyace-pilot-training-log.firebasestorage.app",
+    messagingSenderId:"220736841255",
+    appId:"1:220736841255:web:0d1c8d7685842996b31002"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  let currentUser = null, authMode = 'signin';
+  let trainingData = null, userCert = '';
+
+  // Auth observer
+  auth.onAuthStateChanged(user => {
+    if (user) { currentUser = user; showApp(user); }
+    else { currentUser = null; showAuthView(); }
+  });
+
+  function showAuthView() {
+    document.getElementById('v-auth').style.display = 'flex';
+    document.getElementById('v-app').style.display = 'none';
+  }
+
+  function showApp(user) {
+    document.getElementById('v-auth').style.display = 'none';
+    document.getElementById('v-app').style.display = 'block';
+    const name = user.displayName || user.email.split('@')[0];
+    document.getElementById('nav-user-name').textContent = name;
+    showSection('dashboard');
+    loadTrainingData(user.uid);
+    updateUserRecord(user);
+    // Initialize profile email field
+    document.getElementById('p-email').value = user.email || '';
+    renderAchievements(null);
+  }
+
+  function showSection(name) {
+    ['dashboard','training','profile'].forEach(s => {
+      document.getElementById('sec-'+s).style.display = s===name ? 'block' : 'none';
+      document.getElementById('tab-'+s).classList.toggle('active', s===name);
+    });
+  }
+
+  // Auth
+  function switchAuthTab(mode) {
+    authMode = mode;
+    document.getElementById('tab-signin').classList.toggle('active', mode==='signin');
+    document.getElementById('tab-signup').classList.toggle('active', mode==='signup');
+    document.getElementById('field-name').style.display = mode==='signup' ? 'block' : 'none';
+    document.getElementById('auth-btn-text').textContent = mode==='signin' ? 'SIGN IN' : 'CREATE ACCOUNT';
+    hideError('auth-error');
+  }
+
+  async function handleEmailAuth(e) {
+    e.preventDefault();
+    const email = document.getElementById('inp-email').value.trim();
+    const pw = document.getElementById('inp-password').value;
+    const first = (document.getElementById('inp-first').value || '').trim();
+    const last = (document.getElementById('inp-last').value || '').trim();
+    const fullName = [first, last].filter(Boolean).join(' ');
+    setLoading('auth', true); hideError('auth-error');
+    try {
+      if (authMode==='signin') {
+        await auth.signInWithEmailAndPassword(email,pw);
+      } else {
+        const c = await auth.createUserWithEmailAndPassword(email,pw);
+        if (fullName) await c.user.updateProfile({displayName: fullName});
+        // Save name to Firestore so profile is pre-populated
+        await db.collection('users').doc(c.user.uid).set({
+          firstName: first, lastName: last, email: email,
+          displayName: fullName,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }, {merge: true});
+      }
+    } catch(err) { showError('auth-error', friendlyError(err.code)); setLoading('auth',false); }
+  }
+
+  async function handleGoogleSignIn() {
+    hideError('auth-error');
+    try {
+      const result = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+      const user = result.user;
+      // Save Google profile data to Firestore on first sign-in
+      if (user.displayName) {
+        const parts = user.displayName.split(' ');
+        const first = parts[0] || '';
+        const last = parts.slice(1).join(' ') || '';
+        await db.collection('users').doc(user.uid).set({
+          firstName: first, lastName: last, email: user.email || '',
+          displayName: user.displayName,
+        }, {merge: true});
+      }
+    } catch(err) {
+      if(err.code!=='auth/popup-closed-by-user') showError('auth-error', friendlyError(err.code));
+    }
+  }
+
+  async function doSignOut() { if(confirm('Sign out?')) await auth.signOut(); }
+
+  // Load training data from user's Firestore doc
+  async function loadTrainingData(uid) {
+    try {
+      const doc = await db.collection('users').doc(uid).get();
+      if (doc.exists) {
+        trainingData = doc.data();
+        userCert = trainingData.certNumber || '';
+        console.log('Loaded user data:', Object.keys(trainingData).length, 'fields');
+        renderDashboard(trainingData);
+        populateTrainingForm(trainingData);
+        loadProfileForm(trainingData);
+        renderAchievements(trainingData);
+      } else {
+        console.log('No user document found — new user');
+        trainingData = {};
+        renderAchievements(null);
+      }
+    } catch(e) {
+      console.error('loadTrainingData failed:', e);
+      showToast('Failed to load your data. Please refresh.');
+    }
+  }
+
+  // Render dashboard from training data
+  function renderDashboard(d) {
+    if (!d) return;
+
+    // Transfer
+    const tHrs = parseFloat(d.transferHours) || 0;
+    const tLdg = parseInt(d.transferLandings) || 0;
+    const tPct = tHrs > 0 ? 100 : 0;
+    setText('ms-transfer-hrs', tHrs > 0 ? tHrs.toFixed(1) : '--');
+    setText('ms-transfer-ldg', tLdg > 0 ? tLdg : '--');
+    setProgress('ms-transfer', tPct);
+
+    // Solo
+    const soloPct = d.soloDate ? 100 : (d.soloHours ? Math.min(Math.round((parseFloat(d.soloHours)/20)*100),99) : 0);
+    setText('ms-solo-date', d.soloDate ? fmtDate(d.soloDate) : '--');
+    setText('ms-solo-hrs', d.soloHours ? parseFloat(d.soloHours).toFixed(1) : '--');
+    setProgress('ms-solo', soloPct);
+
+    // Private
+    const privPct = d.privateDate ? 100 : (d.privateHours ? Math.min(Math.round((parseFloat(d.privateHours)/50)*100),99) : 0);
+    setText('ms-private-date', d.privateDate ? fmtDate(d.privateDate) : '--');
+    setText('ms-private-hrs', d.privateHours ? parseFloat(d.privateHours).toFixed(1) : '--');
+    setProgress('ms-private', privPct);
+
+    // Instrument
+    const instPct = d.instrumentDate ? 100 : (d.instrumentHours ? Math.min(Math.round((parseFloat(d.instrumentHours)/40)*100),99) : 0);
+    setText('ms-instrument-date', d.instrumentDate ? fmtDate(d.instrumentDate) : '--');
+    setText('ms-instrument-hrs', d.instrumentHours ? parseFloat(d.instrumentHours).toFixed(1) : '--');
+    setProgress('ms-instrument', instPct);
+
+    // Commercial
+    const commPct = d.commercialDate ? 100 : (d.commercialHours ? Math.min(Math.round((parseFloat(d.commercialHours)/250)*100),99) : 0);
+    setText('ms-commercial-date', d.commercialDate ? fmtDate(d.commercialDate) : '--');
+    setText('ms-commercial-hrs', d.commercialHours ? parseFloat(d.commercialHours).toFixed(1) : '--');
+    setProgress('ms-commercial', commPct);
+
+    // CFI
+    const cfiPct = d.cfiDate ? 100 : 0;
+    setText('ms-cfi-date', d.cfiDate ? fmtDate(d.cfiDate) : '--');
+    setText('ms-cfi-hrs', d.cfiHours ? parseFloat(d.cfiHours).toFixed(1) : '--');
+    setProgress('ms-cfi', cfiPct);
+
+    // Runway Milestone Tracker
+    const RUNWAY_MILESTONES = [
+      { key: null,              label: 'Start',      icon: '🏁' },
+      { key: 'soloDate',        label: 'First Solo',  icon: '👤' },
+      { key: 'privateDate',     label: 'Private',     icon: '🏅' },
+      { key: 'instrumentDate',  label: 'Instrument',  icon: '🌤️' },
+      { key: 'commercialDate',  label: 'Commercial',  icon: '✈️' },
+      { key: 'cfiDate',         label: 'CFI',         icon: '🎓' },
+    ];
+
+    // Find which milestones are reached
+    const reached = RUNWAY_MILESTONES.map((m, i) => i === 0 ? true : !!d[m.key]);
+    const lastReachedIdx = reached.lastIndexOf(true);
+    const nextIdx = lastReachedIdx < RUNWAY_MILESTONES.length - 1 ? lastReachedIdx + 1 : -1;
+    const totalSteps = RUNWAY_MILESTONES.length - 1;
+    const overallPct = Math.round((lastReachedIdx / totalSteps) * 100);
+
+    // Render markers
+    const markersEl = document.getElementById('runway-markers');
+    markersEl.innerHTML = RUNWAY_MILESTONES.map((m, i) => {
+      const isReached = reached[i];
+      const isNext = i === nextIdx;
+      const dateVal = m.key && d[m.key] ? fmtDate(d[m.key]) : '';
+      return `<div class="runway-marker">
+        <div class="marker-dot ${isReached ? 'reached' : ''} ${isNext ? 'next' : ''}">${isReached ? '✓' : ''}</div>
+        <div class="marker-label ${isReached ? 'reached' : ''} ${isNext ? 'next' : ''}">${m.label}</div>
+        ${dateVal ? `<div class="marker-date">${dateVal}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    // Animate fill, plane, and percentage circle
+    const fillPct = overallPct;
+    const circumference = 238.76;
+
+    // Flight Hours Summary
+    const totalHrs = Math.max(
+      parseFloat(d.cfiHours)||0, parseFloat(d.commercialHours)||0,
+      parseFloat(d.instrumentHours)||0, parseFloat(d.privateHours)||0,
+      parseFloat(d.soloHours)||0
+    ) + (parseFloat(d.transferHours)||0);
+    const totalLdg = (parseInt(d.soloLandings)||0) + (parseInt(d.transferLandings)||0) + (parseInt(d.privateLandings)||0);
+    const certs = [d.privateDate, d.commercialDate].filter(Boolean).length;
+    const ratings = [d.instrumentDate, d.cfiDate].filter(Boolean).length;
+
+    setText('stat-total-hrs', totalHrs.toFixed(1));
+    setText('stat-total-ldg', totalLdg);
+    setText('stat-certs', certs);
+    setText('stat-ratings', ratings);
+
+    setTimeout(() => {
+      document.getElementById('runway-fill').style.width = fillPct + '%';
+      document.getElementById('runway-plane').style.left = fillPct + '%';
+      // Percentage circle
+      const ring = document.getElementById('pct-circle-ring');
+      const val = document.getElementById('pct-circle-val');
+      if (ring) ring.style.strokeDashoffset = circumference * (1 - overallPct / 100);
+      if (val) val.textContent = overallPct + '%';
+      // Hours circle (250 hrs = ATP goal = full circle)
+      const hrsRing = document.getElementById('hrs-circle-ring');
+      const hrsVal = document.getElementById('hrs-circle-val');
+      const hrsPct = Math.min(totalHrs / 250, 1);
+      if (hrsRing) hrsRing.style.strokeDashoffset = circumference * (1 - hrsPct);
+      if (hrsVal) hrsVal.textContent = totalHrs.toFixed(1);
+    }, 200);
+  }
+
+  // Helpers
+  function setProgress(prefix, pct) {
+    const fill = document.getElementById(prefix+'-fill');
+    const txt = document.getElementById(prefix+'-pct');
+    if(fill) fill.style.width = pct+'%';
+    if(txt) txt.textContent = pct+'%';
+  }
+  function setText(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
+
+  function fmtDate(d) {
+    if(!d) return '--';
+    // Handle M/D/YY or YYYY-MM-DD
+    if(d.includes('/')) { const p=d.split('/'); return (p[0]+'/'+p[1]+'/'+(p[2].length===2?'20'+p[2]:p[2])); }
+    const[y,m,day]=d.split('-');
+    const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${mo[+m-1]} ${+day}, ${y}`;
+  }
+
+  async function updateUserRecord(user) {
+    try { await db.collection('users').doc(user.uid).set({
+      email:user.email||'', displayName:user.displayName||user.email.split('@')[0],
+      lastSeen:firebase.firestore.FieldValue.serverTimestamp()
+    },{merge:true}); } catch(e){}
+  }
+
+  function setLoading(prefix, on) {
+    document.getElementById(prefix+'-btn-text').style.display = on?'none':'';
+    document.getElementById(prefix+'-btn-spin').style.display = on?'inline-flex':'none';
+    document.getElementById(prefix+'-submit').disabled = on;
+  }
+
+  function showError(id,msg) { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; }
+  function hideError(id) { document.getElementById(id).style.display='none'; }
+
+  let toastT;
+  function showToast(msg) {
+    const t=document.getElementById('toast'); document.getElementById('toast-msg').textContent=msg;
+    t.className='toast show'; clearTimeout(toastT);
+    toastT=setTimeout(()=>{t.classList.add('hide');setTimeout(()=>{t.className='toast';},250);},3500);
+  }
+
+  function friendlyError(code) {
+    return {'auth/user-not-found':'No account found.','auth/wrong-password':'Incorrect password.',
+      'auth/invalid-credential':'Invalid email or password.','auth/email-already-in-use':'Email already in use.',
+      'auth/weak-password':'Password must be 6+ characters.','auth/invalid-email':'Invalid email.',
+      'auth/too-many-requests':'Too many attempts. Wait and retry.','auth/network-request-failed':'Network error.'
+    }[code]||'Something went wrong.';
+  }
+
+  // ── Phone auto-format: (555) 123-4567 ──────────
+  function formatPhoneField(el) {
+    let digits = el.value.replace(/\D/g, '');
+    if (digits.length === 0) { el.value = ''; return; }
+    if (digits.length > 10) digits = digits.slice(0, 10);
+    let formatted = '';
+    if (digits.length <= 3) formatted = '(' + digits;
+    else if (digits.length <= 6) formatted = '(' + digits.slice(0,3) + ') ' + digits.slice(3);
+    else formatted = '(' + digits.slice(0,3) + ') ' + digits.slice(3,6) + '-' + digits.slice(6);
+    el.value = formatted;
+  }
+
+  // ── Training Log: Toggle Sections ──────────────
+  function toggleFormSection(id) {
+    const body = document.getElementById(id);
+    const tog = document.getElementById('tog-'+id);
+    if (!body) return;
+    body.classList.toggle('hidden');
+    if (tog) tog.classList.toggle('collapsed', body.classList.contains('hidden'));
+  }
+
+  // ── Training Log: All field IDs mapped to Firestore keys ──
+  const TRAINING_FIELDS = [
+    'transferStudent','transferHours','transferLandings',
+    'soloDate','soloAge','soloHours','soloLandings','soloAirplane',
+    'privateDate','privateAge','privateHours','privateLandings','privateAirplane','privateWrittenExam','privateCheckrideAttempts',
+    'instrumentRating','instrumentDate','instrumentHours','instrumentAirplane','instrumentWrittenExam',
+    'commercialDate','commercialAge','commercialHours','commercialAirplane','commercialWrittenExam','commercialCheckrideAttempts',
+    'multiEngineRating','multiEngineDate','multiEngineHours','multiEngineAirplane',
+    'cfiCertificate','cfiDate','cfiHours','cfiiCertificate','meiCertificate',
+    'collegeAttended','major','firstAirlineJob','additionalRatings'
+  ];
+
+  // ── Training Log: Auto-calculate age at milestone dates ──
+  function calcAgeAtDate(milestone) {
+    // Get birthdate from loaded training data or profile
+    const birthdate = (trainingData && trainingData.birthdate) || '';
+    const dateEl = document.getElementById('t-' + milestone + 'Date');
+    const ageEl = document.getElementById('t-' + milestone + 'Age');
+    if (!ageEl || !dateEl) return;
+
+    const milestoneDate = dateEl.value;
+    if (!birthdate || !milestoneDate) {
+      ageEl.value = birthdate ? '' : 'Set birthdate in Profile';
+      return;
+    }
+
+    const birth = new Date(birthdate);
+    const event = new Date(milestoneDate);
+    if (isNaN(birth) || isNaN(event)) { ageEl.value = ''; return; }
+
+    let age = event.getFullYear() - birth.getFullYear();
+    const m = event.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && event.getDate() < birth.getDate())) age--;
+    ageEl.value = age >= 0 ? age + ' years old' : '';
+  }
+
+  function recalcAllAges() {
+    ['solo', 'private', 'commercial'].forEach(m => calcAgeAtDate(m));
+  }
+
+  // ── Training Log: Populate form from loaded data ──
+  function populateTrainingForm(d) {
+    if (!d) return;
+    TRAINING_FIELDS.forEach(key => {
+      const el = document.getElementById('t-'+key);
+      if (!el) return;
+      // Skip readonly age fields — they'll be auto-calculated
+      if (key === 'soloAge' || key === 'privateAge' || key === 'commercialAge') return;
+      const val = d[key];
+      if (val !== undefined && val !== null && val !== '') {
+        if (el.type === 'number') el.value = val;
+        else if (el.type === 'date') el.value = convertToDateInput(val);
+        else el.value = val;
+      }
+    });
+    // Auto-calculate ages after populating dates
+    recalcAllAges();
+  }
+
+  // Convert various date formats to YYYY-MM-DD for input[type=date]
+  function convertToDateInput(d) {
+    if (!d) return '';
+    if (d.includes('-') && d.length === 10) return d; // already YYYY-MM-DD
+    if (d.includes('/')) {
+      const p = d.split('/');
+      if (p.length === 3) {
+        const yr = p[2].length === 2 ? '20'+p[2] : p[2];
+        return `${yr}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`;
+      }
+    }
+    return d;
+  }
+
+  // ── Training Log: Save form to Firestore ──
+  async function saveTrainingLog() {
+    if (!currentUser) return;
+    const data = {};
+    TRAINING_FIELDS.forEach(key => {
+      const el = document.getElementById('t-'+key);
+      if (!el) return;
+      const val = el.value.trim();
+      if (val !== '') {
+        // For auto-calculated age fields, extract the number
+        if (key === 'soloAge' || key === 'privateAge' || key === 'commercialAge') {
+          const num = parseInt(val);
+          if (!isNaN(num)) data[key] = num;
+        } else if (el.type === 'number') {
+          data[key] = parseFloat(val) || 0;
+        } else {
+          data[key] = val;
+        }
+      }
+    });
+
+    const statusEl = document.getElementById('training-save-status');
+    try {
+      await db.collection('users').doc(currentUser.uid).set(data, { merge: true });
+      // Refresh dashboard data
+      trainingData = { ...trainingData, ...data };
+      renderDashboard(trainingData);
+      statusEl.textContent = '✓ Training data saved successfully!';
+      statusEl.style.color = 'var(--neon)';
+      statusEl.classList.add('show');
+      showToast('Training data saved!');
+      setTimeout(() => statusEl.classList.remove('show'), 4000);
+    } catch(e) {
+      statusEl.textContent = '✕ Failed to save. Please try again.';
+      statusEl.style.color = 'var(--danger)';
+      statusEl.classList.add('show');
+      console.error('saveTrainingLog:', e);
+    }
+  }
+
+  // ══════════════════════════════════════════════════
+  //  PROFILE
+  // ══════════════════════════════════════════════════
+
+  const PROFILE_FIELDS = ['firstName','lastName','certNumber','gender','birthdate','phone','address','address2','city','state','zip','emergencyName','emergencyRelation','emergencyPhone'];
+
+  function loadProfileForm(d) {
+    if (!d) return;
+    PROFILE_FIELDS.forEach(key => {
+      const el = document.getElementById('p-'+key);
+      if (!el) return;
+      const val = d[key];
+      // Only set if there's actual data — don't overwrite defaults with empty strings
+      if (val !== undefined && val !== null && val !== '') {
+        el.value = val;
+      }
+    });
+    if (currentUser) document.getElementById('p-email').value = currentUser.email || '';
+    // Load photo if saved
+    if (d.photoBase64) {
+      const img = document.getElementById('prof-photo-img');
+      img.src = d.photoBase64;
+      img.style.display = 'block';
+    }
+    updateProfilePreview();
+    updateProfileAge();
+    renderAchievements(d);
+  }
+
+  function updateProfilePreview() {
+    const first = (document.getElementById('p-firstName').value || '').trim();
+    const last = (document.getElementById('p-lastName').value || '').trim();
+    const cert = (document.getElementById('p-certNumber').value || '').trim();
+    const gender = document.getElementById('p-gender').value || '';
+
+    // Avatar initials
+    const initials = (first.charAt(0) + last.charAt(0)).toUpperCase() || '—';
+    document.getElementById('prof-avatar').textContent = initials;
+
+    // Display name
+    const fullName = [first, last].filter(Boolean).join(' ') || 'Your Name';
+    document.getElementById('prof-display-name').textContent = fullName;
+
+    // Cert & Gender
+    document.getElementById('prof-cert-display').textContent = cert || '--';
+    document.getElementById('prof-gender-display').textContent = gender || '--';
+
+    // Member since (from Firestore createdAt or lastSeen)
+    if (trainingData && trainingData.lastSeen && trainingData.lastSeen.toDate) {
+      // Use a rough "member since" from account
+    }
+    if (currentUser && currentUser.metadata && currentUser.metadata.creationTime) {
+      const d = new Date(currentUser.metadata.creationTime);
+      document.getElementById('prof-member-since').textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+  }
+
+  function updateProfileAge() {
+    const dob = document.getElementById('p-birthdate').value;
+    const ageEl = document.getElementById('p-age');
+    if (!dob) { ageEl.value = ''; return; }
+    const birth = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    ageEl.value = age >= 0 ? age + ' years old' : '';
+
+    // Also update trainingData so calcAgeAtDate can use it
+    if (trainingData) trainingData.birthdate = dob;
+  }
+
+  let pendingPhotoBase64 = null;
+
+  function handlePhotoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (file.size > 500000) { showToast('Photo must be under 500KB. Please resize.'); return; }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      // Resize to 200x200 max
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const size = 200;
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const min = Math.min(img.width, img.height);
+        const sx = (img.width - min) / 2, sy = (img.height - min) / 2;
+        ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+        pendingPhotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        // Preview
+        const photoEl = document.getElementById('prof-photo-img');
+        photoEl.src = pendingPhotoBase64;
+        photoEl.style.display = 'block';
+        showToast('Photo loaded! Click Save Profile to keep it.');
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function saveProfile() {
+    if (!currentUser) return;
+    const data = {};
+    PROFILE_FIELDS.forEach(key => {
+      const el = document.getElementById('p-'+key);
+      if (el) {
+        const val = el.value.trim();
+        data[key] = val; // save all values including empty to allow clearing
+      }
+    });
+
+    // Include photo if uploaded
+    if (pendingPhotoBase64) {
+      data.photoBase64 = pendingPhotoBase64;
+      pendingPhotoBase64 = null;
+    }
+
+    if (data.certNumber) userCert = data.certNumber;
+
+    const statusEl = document.getElementById('profile-save-status');
+    try {
+      await db.collection('users').doc(currentUser.uid).set(data, { merge: true });
+
+      // Verify the save by re-reading
+      const verifyDoc = await db.collection('users').doc(currentUser.uid).get();
+      if (verifyDoc.exists) {
+        trainingData = verifyDoc.data();
+        renderDashboard(trainingData);
+        renderAchievements(trainingData);
+        recalcAllAges();
+      }
+
+      statusEl.textContent = '✓ Profile saved successfully!';
+      statusEl.style.color = 'var(--neon)';
+      statusEl.style.display = 'block';
+      showToast('Profile saved!');
+      setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
+    } catch(e) {
+      statusEl.textContent = '✕ Failed to save profile. Check your connection.';
+      statusEl.style.color = 'var(--danger)';
+      statusEl.style.display = 'block';
+      showToast('Save failed — check console for details.');
+      console.error('saveProfile:', e);
+    }
+  }
+
+  // ── Achievements ───────────────────────────────
+  const ACHIEVEMENTS = [
+    { key: 'soloDate',        label: 'First Solo',    icon: '👤' },
+    { key: 'privateDate',     label: 'Private Pilot', icon: '🏅' },
+    { key: 'instrumentDate',  label: 'Instrument',    icon: '🌤️' },
+    { key: 'commercialDate',  label: 'Commercial',    icon: '✈️' },
+    { key: 'multiEngineDate', label: 'Multi-Engine',  icon: '⚙️' },
+    { key: 'cfiCertificate',  label: 'CFI',           icon: '🎓', checkVal: 'Yes' },
+    { key: 'cfiiCertificate', label: 'CFII',          icon: '☁️', checkVal: 'Yes' },
+    { key: 'collegeAttended', label: 'College',       icon: '🏫' },
+    { key: 'firstAirlineJob', label: 'Airline Job',   icon: '🛫' },
+  ];
+
+  function renderAchievements(d) {
+    const grid = document.getElementById('achievements-grid');
+    if (!grid) return;
+    grid.innerHTML = ACHIEVEMENTS.map(a => {
+      const val = d ? d[a.key] : null;
+      const earned = a.checkVal ? val === a.checkVal : !!val;
+      return `<div class="achieve-badge ${earned ? 'earned' : ''}">
+        <div class="achieve-check">✓</div>
+        <div class="achieve-icon">${a.icon}</div>
+        <div class="achieve-label">${a.label}</div>
+      </div>`;
+    }).join('');
+  }
+</script>
+
+</body>
+</html>
