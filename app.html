@@ -1096,6 +1096,7 @@
         <button class="admin-tab" id="atab-students" onclick="showAdminTab('students')">All Students</button>
         <button class="admin-tab" id="atab-search" onclick="showAdminTab('search')">Search</button>
         <button class="admin-tab" id="atab-reports" onclick="showAdminTab('reports')">Reports</button>
+        <button class="admin-tab" id="atab-users" onclick="showAdminTab('users')">Users</button>
       </div>
 
       <!-- OVERVIEW -->
@@ -1193,12 +1194,49 @@
           </div>
         </div>
       </div>
+
+      <!-- USERS (Role Management) -->
+      <div id="asec-users" style="display:none;">
+        <div class="neo-card" style="padding:24px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+            <div>
+              <div style="font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim);">User Management</div>
+              <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Assign roles: Admin, Instructor, or Student</p>
+            </div>
+            <button class="btn-ghost" onclick="loadAllStudents()">↻ Refresh</button>
+          </div>
+
+          <!-- Role legend -->
+          <div style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:6px; font-size:12px;">
+              <span style="width:10px; height:10px; border-radius:50%; background:#f87171;"></span>
+              <span style="color:var(--text-dim);">Admin — Full access to admin panel</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; font-size:12px;">
+              <span style="width:10px; height:10px; border-radius:50%; background:#fbbf24;"></span>
+              <span style="color:var(--text-dim);">Instructor — Can view student progress</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; font-size:12px;">
+              <span style="width:10px; height:10px; border-radius:50%; background:var(--neon);"></span>
+              <span style="color:var(--text-dim);">Student — Default, own data only</span>
+            </div>
+          </div>
+
+          <input id="adm-user-search" type="text" class="form-input admin-search-input" placeholder="Search users by name or email…" oninput="renderUserManagement(this.value)" style="margin-bottom:16px;">
+
+          <div style="overflow-x:auto;">
+            <table class="log-table" id="adm-users-table">
+              <thead><tr><th>Name</th><th>Email</th><th>Current Role</th><th>Change Role</th><th>Last Seen</th></tr></thead>
+              <tbody id="adm-users-tbody"></tbody>
+            </table>
+          </div>
+          <div id="adm-users-empty" style="padding:40px 24px; text-align:center; color:var(--text-muted); font-size:13px;">Loading users…</div>
+        </div>
+      </div>
     </section>
 
   </main>
 </div>
-
-<!-- Toast -->
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
 <!-- ═══ JAVASCRIPT ═══ -->
@@ -1911,19 +1949,26 @@
   async function checkAdminRole(uid) {
     try {
       const doc = await db.collection('users').doc(uid).get();
-      isAdmin = !!(doc.exists && doc.data().isAdmin === true);
+      if (doc.exists) {
+        const data = doc.data();
+        isAdmin = data.isAdmin === true;
+        // Instructors also get limited admin access
+        if (data.role === 'Instructor' || data.role === 'Admin') isAdmin = true;
+        if (data.role === 'Admin') isAdmin = true;
+      }
     } catch(e) { isAdmin = false; }
     document.getElementById('tab-admin').style.display = isAdmin ? '' : 'none';
     console.log('Admin role:', isAdmin);
   }
 
   function showAdminTab(name) {
-    ['overview','students','search','reports'].forEach(t => {
+    ['overview','students','search','reports','users'].forEach(t => {
       const sec = document.getElementById('asec-'+t);
       if (sec) sec.style.display = t===name ? 'block' : 'none';
       const tab = document.getElementById('atab-'+t);
       if (tab) tab.classList.toggle('active', t===name);
     });
+    if (name === 'users') renderUserManagement('');
   }
 
   async function loadAllStudents() {
@@ -2047,6 +2092,94 @@
         <td>${totalHrs > 0 ? totalHrs.toFixed(1) : '—'}</td>
       </tr>`;
     }).join('');
+  }
+
+  // ── User Role Management ────────────────────────
+  function renderUserManagement(query) {
+    const q = (query||'').toLowerCase().trim();
+    let filtered = allStudents;
+    if (q) {
+      filtered = filtered.filter(s => {
+        const searchable = [s.firstName, s.lastName, s.displayName, s.email].filter(Boolean).join(' ').toLowerCase();
+        return searchable.includes(q);
+      });
+    }
+
+    const tbody = document.getElementById('adm-users-tbody');
+    const empty = document.getElementById('adm-users-empty');
+    const table = document.getElementById('adm-users-table');
+
+    if (!filtered.length) {
+      table.style.display = 'none'; empty.style.display = 'block';
+      empty.textContent = q ? 'No users match your search.' : 'No users found.';
+      return;
+    }
+    table.style.display = ''; empty.style.display = 'none';
+
+    tbody.innerHTML = filtered.map(s => {
+      const name = [s.firstName, s.lastName].filter(Boolean).join(' ') || s.displayName || '—';
+      const role = getUserRole(s);
+      const roleBadge = role === 'Admin'
+        ? '<span style="display:inline-block; padding:2px 10px; border-radius:4px; font-size:11px; font-weight:600; background:rgba(248,113,113,0.12); border:1px solid rgba(248,113,113,0.3); color:#f87171;">Admin</span>'
+        : role === 'Instructor'
+        ? '<span style="display:inline-block; padding:2px 10px; border-radius:4px; font-size:11px; font-weight:600; background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.3); color:#fbbf24;">Instructor</span>'
+        : '<span style="display:inline-block; padding:2px 10px; border-radius:4px; font-size:11px; font-weight:600; background:var(--neon-subtle); border:1px solid var(--border); color:var(--neon);">Student</span>';
+
+      const lastSeen = s.lastSeen && s.lastSeen.toDate
+        ? s.lastSeen.toDate().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
+        : '—';
+
+      return `<tr>
+        <td class="td-hi">${esc(name)}</td>
+        <td>${esc(s.email||'—')}</td>
+        <td>${roleBadge}</td>
+        <td>
+          <select class="form-input" style="width:auto; min-width:130px; padding:6px 10px; font-size:12px;" onchange="changeUserRole('${s.uid}','${esc(name)}',this.value)">
+            <option value="Student" ${role==='Student'?'selected':''}>Student</option>
+            <option value="Instructor" ${role==='Instructor'?'selected':''}>Instructor</option>
+            <option value="Admin" ${role==='Admin'?'selected':''}>Admin</option>
+          </select>
+        </td>
+        <td style="font-size:12px; color:var(--text-muted);">${lastSeen}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function getUserRole(user) {
+    if (user.role) return user.role;
+    if (user.isAdmin === true) return 'Admin';
+    return 'Student';
+  }
+
+  async function changeUserRole(uid, name, newRole) {
+    if (!confirm(`Change ${name}'s role to ${newRole}?`)) {
+      renderUserManagement(document.getElementById('adm-user-search').value);
+      return;
+    }
+
+    try {
+      const updateData = { role: newRole };
+      // Sync isAdmin boolean for backward compatibility
+      if (newRole === 'Admin') {
+        updateData.isAdmin = true;
+      } else {
+        updateData.isAdmin = false;
+      }
+
+      await db.collection('users').doc(uid).update(updateData);
+      showToast(`${name} is now ${newRole}`);
+
+      // Update local data
+      const student = allStudents.find(s => s.uid === uid);
+      if (student) {
+        student.role = newRole;
+        student.isAdmin = newRole === 'Admin';
+      }
+      renderUserManagement(document.getElementById('adm-user-search').value);
+    } catch(e) {
+      console.error('changeUserRole:', e);
+      showToast('Failed to update role. Try again.');
+    }
   }
 
   function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
