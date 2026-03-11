@@ -150,7 +150,7 @@
     /* ── Top Nav ── */
     .top-nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-      height: 72px;
+      height: 80px;
       background: rgba(7,13,27,0.92);
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
@@ -164,7 +164,7 @@
       background: white; border-radius: 8px; padding: 6px 14px;
       display: flex; align-items: center;
     }
-    .nav-logo-box img { height: 44px; width: auto; }
+    .nav-logo-box img { height: 60px; width: auto; }
     .nav-tabs { display: flex; gap: 4px; }
     .nav-tab {
       display: flex; align-items: center; gap: 6px;
@@ -703,7 +703,7 @@
   <div class="glow-bar"></div>
 
   <!-- Main -->
-  <main style="max-width:1100px; margin:0 auto; padding:96px 28px 60px;">
+  <main style="max-width:1100px; margin:0 auto; padding:104px 28px 60px;">
 
     <!-- ═══ DASHBOARD ═══ -->
     <section id="sec-dashboard">
@@ -2185,14 +2185,45 @@
   function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   // ── PDF Reports ────────────────────────────────
+  // ── Preload ACE logo for PDF reports ─────────────
+  let aceLogoBase64 = null;
+  (function preloadLogo() {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width; canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      // White background behind logo
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      aceLogoBase64 = canvas.toDataURL('image/jpeg', 0.9);
+      console.log('ACE logo preloaded for PDF reports');
+    };
+    img.onerror = function() { console.warn('Could not preload ACE logo for PDFs'); };
+    img.src = 'brand_assets/ACE Logo.jpeg';
+  })();
+
   function pdfHeader(doc, title) {
-    doc.setFillColor(7,13,27); doc.rect(0,0,doc.internal.pageSize.getWidth(),24,'F');
-    doc.setTextColor(208,223,245); doc.setFont('helvetica','bold'); doc.setFontSize(14);
-    doc.text('ACE — Aviation Career Enrichment',14,11);
-    doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(106,127,160);
-    doc.text(title,14,19);
-    doc.text('Generated: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),doc.internal.pageSize.getWidth()-14,19,{align:'right'});
-    doc.setDrawColor(57,255,20); doc.setLineWidth(0.5); doc.line(14,24,doc.internal.pageSize.getWidth()-14,24);
+    const pw = doc.internal.pageSize.getWidth();
+    const ph = doc.internal.pageSize.getHeight();
+    // Full page background
+    doc.setFillColor(20,40,80); doc.rect(0,0,pw,ph,'F');
+    // Header bar
+    doc.setFillColor(15,30,65); doc.rect(0,0,pw,28,'F');
+    // Logo
+    if (aceLogoBase64) {
+      doc.setFillColor(255,255,255); doc.roundedRect(10,3,28,22,2,2,'F');
+      try { doc.addImage(aceLogoBase64, 'JPEG', 11, 4, 26, 20); } catch(e) {}
+    }
+    const textX = aceLogoBase64 ? 44 : 14;
+    doc.setTextColor(230,240,255); doc.setFont('helvetica','bold'); doc.setFontSize(14);
+    doc.text('ACE — Aviation Career Enrichment', textX, 12);
+    doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(150,175,210);
+    doc.text(title, textX, 20);
+    doc.text('Generated: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}), pw-14, 20, {align:'right'});
+    doc.setDrawColor(57,255,20); doc.setLineWidth(0.5); doc.line(14,28,pw-14,28);
   }
 
   function generateStudentProgressReport() {
@@ -2216,11 +2247,11 @@
     const name = [s.firstName, s.lastName].filter(Boolean).join(' ') || s.displayName || 'Unknown';
     pdfHeader(doc, 'Student Progress Report');
 
-    doc.setTextColor(208,223,245); doc.setFont('helvetica','bold'); doc.setFontSize(18);
-    doc.text(name, 14, 36);
-    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(106,127,160);
+    doc.setTextColor(235,245,255); doc.setFont('helvetica','bold'); doc.setFontSize(18);
+    doc.text(name, 14, 40);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(160,185,220);
     const meta = [s.certNumber?'Cert #'+s.certNumber:null, s.gender, s.collegeAttended||s.college].filter(Boolean).join('   ·   ');
-    if (meta) doc.text(meta, 14, 43);
+    if (meta) doc.text(meta, 14, 47);
 
     const milestones = [
       {label:'Transfer', date:null, hours:s.transferHours, extra:'Landings: '+(s.transferLandings||'—')},
@@ -2231,22 +2262,22 @@
       {label:'CFI', date:s.cfiDate, hours:s.cfiHours, extra:s.cfiCertificate?'Certificate: '+s.cfiCertificate:''},
     ];
 
-    let y = 54;
+    let y = 58;
     milestones.forEach(m => {
-      doc.setFillColor(15,28,48); doc.roundedRect(14,y,182,22,2,2,'F');
-      doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(208,223,245);
+      doc.setFillColor(25,50,100); doc.roundedRect(14,y,182,22,2,2,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(235,245,255);
       doc.text(m.label, 20, y+9);
       if (m.date) {
         doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(57,255,20);
         doc.text('✓ ' + m.date, 20, y+16);
       } else if (parseFloat(m.hours) > 0) {
-        doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(106,127,160);
+        doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(160,185,220);
         doc.text('In progress', 20, y+16);
       } else {
-        doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(61,80,112);
+        doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(100,130,175);
         doc.text('Not started', 20, y+16);
       }
-      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(106,127,160);
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(160,185,220);
       const details = [m.hours ? parseFloat(m.hours).toFixed(1)+' hrs' : null, m.extra||null].filter(Boolean).join('   ·   ');
       if (details) doc.text(details, 110, y+12);
       y += 26;
@@ -2265,23 +2296,23 @@
 
     const headers = ['Name','Cert #','Gender','Solo','Private','Instrument','Commercial','CFI','College'];
     const colW = [40,18,16,28,28,28,28,18,46];
-    let y = 32;
-    doc.setFillColor(22,38,64); doc.rect(14,y,colW.reduce((a,b)=>a+b,0),8,'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(106,127,160);
+    let y = 36;
+    doc.setFillColor(30,58,110); doc.rect(14,y,colW.reduce((a,b)=>a+b,0),8,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(160,185,220);
     let x = 14;
     headers.forEach((h,i) => { doc.text(h.toUpperCase(), x+2, y+5.5); x += colW[i]; });
     y += 10;
 
     allStudents.forEach((s,idx) => {
-      if (y > 180) { doc.addPage(); pdfHeader(doc,'Class Overview (cont.)'); y = 32; }
-      if (idx%2===0) { doc.setFillColor(15,28,48); doc.rect(14,y,colW.reduce((a,b)=>a+b,0),7,'F'); }
+      if (y > 180) { doc.addPage(); pdfHeader(doc,'Class Overview (cont.)'); y = 36; }
+      if (idx%2===0) { doc.setFillColor(25,50,100); doc.rect(14,y,colW.reduce((a,b)=>a+b,0),7,'F'); }
       doc.setFont('helvetica','normal'); doc.setFontSize(7);
       x = 14;
       const name = [s.firstName, s.lastName].filter(Boolean).join(' ') || s.displayName || '—';
       const vals = [name, s.certNumber||'—', s.gender||'—', s.soloDate||'—', s.privateDate||'—', s.instrumentDate||'—', s.commercialDate||'—', s.cfiDate||(s.cfiCertificate==='Yes'?'Yes':'—'), s.collegeAttended||s.college||'—'];
       vals.forEach((v,i) => {
         const isDate = i>=3 && i<=7 && v!=='—';
-        doc.setTextColor(isDate?57:i===0?208:106, isDate?255:i===0?223:127, isDate?20:i===0?245:160);
+        doc.setTextColor(isDate?57:i===0?235:160, isDate?255:i===0?245:185, isDate?20:i===0?255:220);
         doc.text(String(v).substring(0,20), x+2, y+5); x += colW[i];
       });
       y += 7;
@@ -2297,10 +2328,10 @@
     const doc = new jsPDF();
     pdfHeader(doc, 'Flight Hours Summary');
 
-    doc.setTextColor(208,223,245); doc.setFont('helvetica','bold'); doc.setFontSize(16);
-    doc.text('Aggregate Flight Hours', 14, 36);
-    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(106,127,160);
-    doc.text('Based on ' + allStudents.length + ' student records', 14, 43);
+    doc.setTextColor(235,245,255); doc.setFont('helvetica','bold'); doc.setFontSize(16);
+    doc.text('Aggregate Flight Hours', 14, 40);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(160,185,220);
+    doc.text('Based on ' + allStudents.length + ' student records', 14, 47);
 
     let totalTransfer=0, totalSolo=0, totalPrivate=0, totalInstrument=0, totalCommercial=0, totalCFI=0;
     allStudents.forEach(s => {
@@ -2322,10 +2353,10 @@
       {label:'Total Combined', val:totalTransfer+totalSolo+totalPrivate+totalInstrument+totalCommercial+totalCFI},
     ];
 
-    let y = 52;
+    let y = 56;
     cats.forEach(c => {
-      doc.setFillColor(15,28,48); doc.roundedRect(14,y,182,14,2,2,'F');
-      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(106,127,160);
+      doc.setFillColor(25,50,100); doc.roundedRect(14,y,182,14,2,2,'F');
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(160,185,220);
       doc.text(c.label, 20, y+9);
       doc.setFont('helvetica','bold'); doc.setTextColor(57,255,20);
       doc.text(c.val.toFixed(1) + ' hrs', 182, y+9, {align:'right'});
@@ -2341,8 +2372,8 @@
     const doc = new jsPDF();
     pdfHeader(doc, 'Fleet / Aircraft Usage Report');
 
-    doc.setTextColor(208,223,245); doc.setFont('helvetica','bold'); doc.setFontSize(16);
-    doc.text('Aircraft Usage Summary', 14, 36);
+    doc.setTextColor(235,245,255); doc.setFont('helvetica','bold'); doc.setFontSize(16);
+    doc.text('Aircraft Usage Summary', 14, 40);
 
     // Collect unique aircraft from all students
     const aircraft = {};
@@ -2359,24 +2390,24 @@
 
     const acList = Object.values(aircraft).sort((a,b) => b.uses - a.uses);
 
-    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(106,127,160);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(160,185,220);
     doc.text(acList.length + ' unique aircraft found across ' + allStudents.length + ' students', 14, 43);
 
-    let y = 52;
+    let y = 56;
     if (!acList.length) {
-      doc.setFont('helvetica','italic'); doc.setFontSize(10); doc.setTextColor(61,80,112);
+      doc.setFont('helvetica','italic'); doc.setFontSize(10); doc.setTextColor(100,130,175);
       doc.text('No aircraft data recorded yet.', 14, y);
     } else {
-      doc.setFillColor(22,38,64); doc.rect(14,y,182,8,'F');
-      doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(106,127,160);
+      doc.setFillColor(30,58,110); doc.rect(14,y,182,8,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(160,185,220);
       doc.text('TAIL #', 16, y+5.5); doc.text('USES', 80, y+5.5); doc.text('MILESTONES', 110, y+5.5);
       y += 10;
       acList.forEach((a,idx) => {
-        if (y > 270) { doc.addPage(); pdfHeader(doc,'Fleet (cont.)'); y = 32; }
-        if (idx%2===0) { doc.setFillColor(15,28,48); doc.rect(14,y,182,7,'F'); }
-        doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(208,223,245);
+        if (y > 270) { doc.addPage(); pdfHeader(doc,'Fleet (cont.)'); y = 36; }
+        if (idx%2===0) { doc.setFillColor(25,50,100); doc.rect(14,y,182,7,'F'); }
+        doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(235,245,255);
         doc.text(a.tail, 16, y+5);
-        doc.setFont('helvetica','normal'); doc.setTextColor(106,127,160);
+        doc.setFont('helvetica','normal'); doc.setTextColor(160,185,220);
         doc.text(String(a.uses), 80, y+5);
         doc.setFontSize(8);
         doc.text([...new Set(a.milestones)].join(', '), 110, y+5);
